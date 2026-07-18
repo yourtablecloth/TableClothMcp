@@ -93,17 +93,38 @@ RID 별 빌드/링크는 각 OS 러너에서 수행한다([`release.yml`](.githu
 버전 태그 하나(`vX.Y.Z`)를 밀면 [`.github/workflows/release.yml`](.github/workflows/release.yml)가
 **dnx(NuGet)와 npx(npm)를 같은 버전으로 동시에** 게시한다.
 
-1. `Version`을 정하고(태그에서 파생), csproj `<Version>`도 맞춘다.
-2. `git tag vX.Y.Z && git push origin vX.Y.Z`
-3. 워크플로우:
-   - `nuget` 잡: `dotnet pack` → `TableCloth.Mcp` 를 nuget.org 로 push (dnx 레인)
-   - `aot` 잡(매트릭스 win-x64/win-arm64): NativeAOT 게시 → 바이너리 아티팩트
-   - `npm` 잡: `scripts/assemble-npm.mjs`로 `tablecloth-mcp`(런처)+플랫폼 패키지 조립 → npmjs.org publish (npx 레인)
+1. `git tag vX.Y.Z && git push origin vX.Y.Z` (버전은 태그에서 파생 — 양 채널 동일 스탬프)
+2. 워크플로우:
+   - `nuget` 잡: `dotnet pack` → **OIDC 신뢰 게시**로 `TableCloth.Mcp` nuget.org push (dnx 레인)
+   - `aot` 잡(매트릭스 win/osx/linux): NativeAOT 게시 → 바이너리 아티팩트
+   - `npm` 잡: `scripts/assemble-npm.mjs`로 런처+플랫폼(5) 조립 → **OIDC 신뢰 게시** npmjs.org publish (npx 레인)
 
-**필요 시크릿:** `NUGET_API_KEY`, `NPM_TOKEN`. (수동 실행은 Actions → Release → Run workflow, `version` 입력)
+### 게시 인증: Trusted Publishing (OIDC) — 장기 토큰 없음
 
-**이름 선점 확인:** nuget `TableCloth.Mcp`, npm `tablecloth-mcp` / `tablecloth-mcp-win32-x64` / `-arm64` 가
-사용 가능한지(또는 소유 중인지) 최초 게시 전에 확인할 것.
+두 채널 모두 **OIDC 신뢰 게시**를 쓴다. 장기 API 키/토큰을 저장하지 않으므로, 토큰이 어디서 유출되든
+**재사용 자체가 불가능**하다(발급되는 자격증명이 없음). 게시 잡은 `environment: production` + `id-token: write`.
+
+**등록해야 할 것 (게시 전 1회):**
+
+- **nuget.org** → 계정 → Trusted Publishing → 정책 생성: Package Owner, Repository Owner `yourtablecloth`,
+  Repository `TableClothMcp`, **Workflow File `release.yml`**, Environment `production`.
+  워크플로우가 참조하는 `NUGET_USER`(= nuget.org **사용자명**, 비밀 아님이지만 secret 로 저장) 하나만 등록.
+- **npmjs.com** → 각 패키지(런처 `tablecloth-mcp` + 5개 플랫폼 패키지) → Settings → Trusted Publisher →
+  GitHub Actions: repo `yourtablecloth/TableClothMcp`, **workflow `release.yml`**, environment `production`.
+  (패키지당 1개 trusted publisher.)
+
+**부트스트랩(최초 1회):** npm trusted publisher 는 **패키지가 이미 존재해야** 설정 가능하다. 그래서 6개
+패키지의 **첫 게시만** 임시 토큰이 필요하다 — npm **granular access token**(이 패키지들만 스코프 + 짧은 만료)을
+발급해 로컬/1회성 잡으로 첫 버전을 올린 뒤, 위 trusted publisher 를 설정하면 그 다음부터는 OIDC 로만 게시된다.
+(NuGet 은 신규 패키지도 신뢰 게시로 바로 첫 게시 가능하므로 부트스트랩 불필요.)
+
+**왜 CIDR(고정 IP allowlist)로 안 가나:** GitHub 호스티드 러너 IP 대역은 방대하고 **주간 단위로 바뀌어**
+GitHub 이 공식적으로 allowlist 용도를 **비권장**한다(로테이션마다 깨짐). 고정 IP 가 꼭 필요하면 larger/
+self-hosted 러너(정적 IP)로 egress 를 고정한 뒤 granular token 의 IP allowlist 를 걸어야 하는데, **OIDC 를 쓰면
+토큰 자체가 없어 그 보호가 불필요**하다. 부트스트랩 토큰만 짧게 쓰고 폐기하는 것을 권장.
+
+**이름 선점 확인:** nuget `TableCloth.Mcp`, npm `tablecloth-mcp` + `tablecloth-mcp-{win32,darwin,linux}-{x64,arm64}`
+(실제 5개) 가 사용 가능/소유 상태인지 첫 게시 전에 확인.
 
 ## 예시 흐름 (연말정산)
 
