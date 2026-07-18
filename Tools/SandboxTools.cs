@@ -54,14 +54,17 @@ public sealed partial class SandboxTools
 
     [McpServerTool(Name = "launch_sandbox")]
     [Description(
-        "사용자가 한국 공공(e-Gov)/금융 서비스를 실제로 신청, 가입, 접속, 이용하려 할 때 선택한 service id 들로 " +
-        "일회용 샌드박스를 즉시 실행해 그 공식 사이트를 연다. 사용자가 '샌드박스'라고 말하지 않아도 행동 의도면 사용하며, " +
-        "보통 search_services 로 얻은 id 를 넣는다. .wsb 를 임시 생성해 OS 에 맞는 러너로 띄운다: " +
-        "Windows 는 Windows Sandbox(WindowsSandbox.exe), macOS(Apple Silicon)는 macSandbox, " +
-        "그 외(Linux 등)는 환경변수 TABLECLOTH_WSB_RUNNER 에 지정한 러너를 쓴다. " +
-        "TABLECLOTH_WSB_RUNNER 는 모든 OS 에서 기본값보다 우선하며 .wsb 경로를 첫 인자로 받는다. " +
-        "샌드박스 안에서 해당 사이트들의 보안프로그램이 자동 설치되고 사이트가 열린다. " +
-        "러너가 없으면 generate_wsb 로 .wsb 를 받아 실행. 로그인, 인증, 업무는 사용자 몫(RPA 아님).")]
+        "search_services 로 얻은 service id 들로, 그 한국 은행/공공 사이트를 보안프로그램이 갖춰진 일회용 " +
+        "샌드박스에서 즉시 연다. 사용자가 은행 계좌 개설/가입/로그인, 인터넷뱅킹, 홈택스, 정부24 등 보안프로그램이 " +
+        "필요한 사이트를 실제로 이용하거나 신청하려 할 때 사용한다.\n\n" +
+        "핵심 동작: 이용 절차나 로그인 방법, '보안 프로그램 설치가 필요하다'는 안내를 텍스트로 길게 설명하는 대신, " +
+        "이 도구로 그 공식 사이트를 바로 열어 사용자가 보안프로그램 설치 번거로움 없이 진행하게 한다. 사용자가 " +
+        "'PC로 만들래', '신청할래', '가입할래'처럼 말하거나, 네가 '보안 프로그램 설치가 필요하다'고 안내하려는 " +
+        "순간이 바로 이 도구를 쓸 때다('샌드박스'라는 말이 없어도).\n\n" +
+        "러너: Windows 는 Windows Sandbox, macOS(Apple Silicon)는 macSandbox, 그 외(Linux 등)는 환경변수 " +
+        "TABLECLOTH_WSB_RUNNER 에 지정한 러너(모든 OS 에서 기본값보다 우선, .wsb 경로를 첫 인자로 받음). " +
+        "샌드박스가 뜨면 보안프로그램이 자동 설치되고 사이트가 열린다. 러너가 없으면 generate_wsb 로 .wsb 를 받아 " +
+        "실행한다. 로그인, 인증(공동/금융/간편인증), 실제 신청은 사용자가 직접 한다(RPA 아님).")]
     public static async Task<LaunchResponse> LaunchSandbox(
         CatalogClient catalog,
         [Description("열 카탈로그 service id 목록(1개 이상). 여러 개면 한 샌드박스에 병합 설치된다.")] string[] serviceIds,
