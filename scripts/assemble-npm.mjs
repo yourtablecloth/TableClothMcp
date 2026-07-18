@@ -50,6 +50,9 @@ for (const p of platforms) {
     version,
     description: `TableCloth MCP native binary for ${p.os}-${p.cpu}`,
     license: 'AGPL-3.0-or-later',
+    // OIDC provenance 검증은 package.json 의 repository.url 이 빌드 소스 repo 와 일치해야 통과한다(E422 방지).
+    repository: { type: 'git', url: 'git+https://github.com/yourtablecloth/TableClothMcp.git' },
+    homepage: 'https://yourtablecloth.app',
     os: [p.os],
     cpu: [p.cpu],
     files: [p.exe, 'LICENSE-AGPL', 'LICENSE-COMMERCIAL'],
