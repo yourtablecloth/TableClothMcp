@@ -1,0 +1,11 @@
+# .NET build output (root-anchored so it doesn't match npm/**/bin)
+/bin/
+/obj/
+*.user
+.vs/
+# npm / release assembly
+node_modules/
+dist/
+artifacts/
+# dev
+smoke.out

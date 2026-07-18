@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      # AOT/trim/single-file 분석기가 켜져 있어(csproj), 이 빌드가 AOT 비호환을 경고로 잡는다.
+      - name: Build (Release, AOT analyzers on)
+        run: dotnet build -c Release -warnaserror
+      - name: Lint npm launcher
+        run: node --check npm/tablecloth-mcp/bin/cli.js

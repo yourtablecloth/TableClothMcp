@@ -1,0 +1,114 @@
+name: Release
+
+# 하나의 버전 태그(vX.Y.Z)에서 두 배포 채널을 "같은 선상에서 동일하게" 릴리스한다:
+#   - dnx 레인: .NET tool NuGet 패키지(TableCloth.Mcp) -> nuget.org
+#   - npx 레인: 플랫폼별 NativeAOT 바이너리를 npm 패키지(tablecloth-mcp + 플랫폼 optionalDependency)로 -> npmjs.org
+# 두 채널의 버전은 태그에서 파생된 동일 값으로 스탬프된다.
+#
+# 필요한 저장소 시크릿:
+#   NUGET_API_KEY : nuget.org 푸시 키
+#   NPM_TOKEN     : npmjs.org publish 토큰(Automation)
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g. 0.1.0), no leading v'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  meta:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - id: v
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            V="${{ inputs.version }}"
+          else
+            V="${GITHUB_REF_NAME#v}"
+          fi
+          if ! echo "$V" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+'; then
+            echo "::error::invalid version '$V' (expected X.Y.Z)"; exit 1
+          fi
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          echo "Release version: $V"
+
+  # ---- dnx 레인: .NET tool NuGet 패키지 ----
+  nuget:
+    needs: meta
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Pack .NET tool
+        run: dotnet pack -c Release -p:Version=${{ needs.meta.outputs.version }} -o out
+      - name: Push to NuGet
+        run: dotnet nuget push "out/*.nupkg" -k "${{ secrets.NUGET_API_KEY }}" -s https://api.nuget.org/v3/index.json --skip-duplicate
+
+  # ---- npx 레인: 플랫폼별 NativeAOT 빌드 ----
+  aot:
+    needs: meta
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - rid: win-x64
+            runner: windows-latest
+          - rid: win-arm64
+            runner: windows-11-arm
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      # windows 러너 이미지는 "Desktop development with C++" 워크로드(MSVC 링커)를 포함하므로
+      # NativeAOT 최종 링크가 성립한다(본 프로젝트 부트스트래퍼 빌드와 동일 전제).
+      - name: Publish NativeAOT (${{ matrix.rid }})
+        shell: pwsh
+        run: dotnet publish -r ${{ matrix.rid }} -c Release -p:PublishAot=true -p:PackAsTool=false -p:Version=${{ needs.meta.outputs.version }} -o out
+      - name: Upload native binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: aot-${{ matrix.rid }}
+          path: out/tablecloth-mcp.exe
+          if-no-files-found: error
+
+  # ---- npx 레인: npm 패키지 조립 + 게시 ----
+  npm:
+    needs: [meta, aot]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+      - name: Download native binaries
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Assemble npm packages
+        run: node scripts/assemble-npm.mjs ${{ needs.meta.outputs.version }}
+      - name: Publish platform packages, then the launcher
+        shell: bash
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -e
+          # 플랫폼 패키지를 먼저 게시(런처의 optionalDependency 가 해석 가능해야 하므로), 런처는 마지막.
+          for dir in dist/npm/tablecloth-mcp-*/; do
+            echo "publishing $dir"; npm publish "$dir" --access public
+          done
+          npm publish "dist/npm/tablecloth-mcp/" --access public

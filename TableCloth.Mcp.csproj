@@ -1,0 +1,57 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    TableCloth MCP server — standalone.
+    이 프로젝트는 TableCloth git 리포지터리에 코드/빌드 의존이 없다.
+    런타임에 공개 자산만 소비한다:
+      - 카탈로그: https://yourtablecloth.app/TableClothCatalog/Catalog.xml
+      - 실행 자산: GitHub Release latest/download 의 tablecloth-prepare.ps1 / SporkBootstrap_<arch>.exe / Spork_<arch>_Portable.zip
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>tablecloth-mcp</AssemblyName>
+    <RootNamespace>TableCloth.Mcp</RootNamespace>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+  </PropertyGroup>
+
+  <!-- 레인 B(npx/NativeAOT) 준비: 링커 없이도 빌드 시 AOT/trim/single-file 분석기로 비호환을 잡는다.
+       실제 네이티브 게시는 dotnet publish -r <rid> -p:PublishAot=true 로 수행한다. -->
+  <PropertyGroup>
+    <EnableAotAnalyzer>true</EnableAotAnalyzer>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+    <EnableSingleFileAnalyzer>true</EnableSingleFileAnalyzer>
+  </PropertyGroup>
+
+  <!-- 배포 레인 A: dnx / .NET tool (NuGet 패키지). 클라이언트에 .NET 10 SDK 필요.
+       실행: dnx TableCloth.Mcp  (또는 dotnet tool install -g TableCloth.Mcp) -->
+  <PropertyGroup>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>tablecloth-mcp</ToolCommandName>
+    <PackageId>TableCloth.Mcp</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>TableCloth Project</Authors>
+    <Copyright>Copyright (c) Jung Hyun, Nam (rkttu)</Copyright>
+    <Description>MCP server that finds Korean e-Gov/finance sites and opens them in a clean, disposable Windows Sandbox with the required security software. Discovery + safe-launch only (no RPA). Dual-licensed: AGPL-3.0-or-later, or a commercial license (see LICENSE-COMMERCIAL).</Description>
+    <PackageTags>mcp;model-context-protocol;tablecloth;korea;windows-sandbox;egov</PackageTags>
+    <PackageProjectUrl>https://yourtablecloth.app</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <!-- OSS 옵션은 SPDX 로 선언(AGPL). 커머셜은 SPDX 로 표현 불가라 파일/설명으로 병기. -->
+    <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+    <None Include="LICENSE-AGPL" Pack="true" PackagePath="\" />
+    <None Include="LICENSE-COMMERCIAL" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ModelContextProtocol" Version="1.4.1" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.0" />
+  </ItemGroup>
+
+</Project>
