@@ -12,16 +12,24 @@ setup frustration and helping you find the right site.
 ```jsonc
 {
   "mcpServers": {
-    "tablecloth": { "command": "npx", "args": ["-y", "tablecloth-mcp"] }
+    "tablecloth": { "command": "npx", "args": ["-y", "tablecloth-mcp@latest"] }
   }
 }
 ```
 
-No .NET runtime required — a platform-native (NativeAOT) binary is fetched as an
+No .NET runtime required: a platform-native (NativeAOT) binary is fetched as an
 optional dependency. Prebuilt for **win32-x64**, **win32-arm64**, **darwin-arm64**,
 **linux-x64**, **linux-arm64**.
 
 > Also available as a .NET tool: `dnx TableCloth.Mcp` (needs the .NET 10 SDK).
+
+### Updates
+
+The MCP server is spawned by the client at startup and is not hot-swapped, so a new version
+applies after the client restarts (restart the Claude Desktop app, or start a new Claude Code
+session). `npx` can reuse a cached older version, so `@latest` is recommended; `dnx` resolves the
+latest version on each run. The site/policy catalog is fetched live at runtime, so catalog changes
+apply without a server version bump.
 
 ## Tools
 

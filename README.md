@@ -19,12 +19,14 @@ MCP 클라이언트(Claude Desktop, Claude Code 등)의 설정에 아래 방식 
 
 ### npx로 실행 (Node 사용자, .NET 불필요)
 
-플랫폼에 맞는 네이티브(NativeAOT) 바이너리가 optionalDependency로 자동 설치됩니다.
+플랫폼에 맞는 네이티브(NativeAOT) 바이너리가 optionalDependency로 자동 설치됩니다. `@latest`를 붙인 이유는
+아래 [업데이트](#업데이트) 참고입니다. npx는 버전을 명시하지 않으면 캐시된 옛 버전을 계속 쓸 수 있어,
+새 버전을 잘 받도록 `@latest`를 권합니다.
 
 ```jsonc
 {
   "mcpServers": {
-    "tablecloth": { "command": "npx", "args": ["-y", "tablecloth-mcp"] }
+    "tablecloth": { "command": "npx", "args": ["-y", "tablecloth-mcp@latest"] }
   }
 }
 ```
@@ -59,6 +61,23 @@ tablecloth-mcp
 macOS는 macSandbox와 마찬가지로 Apple Silicon만 지원하며, Intel Mac에서는 dnx 방식을 쓰면 됩니다.
 검색과 `generate_wsb`는 모든 OS에서 동작하고, `launch_sandbox`의 자동 실행은 러너가 있는
 OS(Windows, macOS)에서만 됩니다.
+
+## 업데이트
+
+MCP 서버는 클라이언트가 시작할 때 프로세스로 떠서 실행되고, 실행 중에는 새 버전으로 교체되지 않습니다.
+그래서 새 버전은 **클라이언트를 다시 시작해 서버를 새로 띄울 때** 반영됩니다. Claude Desktop은 앱을
+재시작해야 하고, Claude Code는 세션을 새로 시작하면 됩니다.
+
+- 무엇이 자동으로 갱신되나: 카탈로그(사이트, 정책, 보안패키지 목록)는 서버가 런타임에 라이브로 받아오므로,
+  새 서비스나 정책 추가 같은 변경은 서버 버전을 올리지 않아도 바로 반영됩니다. 서버 버전 교체가 필요한 건
+  도구 동작 변경이나 버그 수정 같은 코드 변경뿐입니다.
+- npx: 버전 없이 쓰면 캐시된 옛 버전을 계속 쓸 수 있어 `tablecloth-mcp@latest`를 권합니다. 그래도 npm
+  캐시 영향이 남을 수 있으니, 확실히 최신으로 받으려면 클라이언트 재시작 전에 `npm cache clean --force`를
+  한 번 해도 됩니다.
+- dnx: 버전을 명시하지 않으면 실행할 때마다 최신 버전을 해석해 받습니다. 갱신 적시성이 중요하면 dnx 쪽이
+  더 유리합니다.
+- 결정론이 필요하면(기업 배포 등) 버전을 고정하고(`tablecloth-mcp@0.1.3`, dnx는 `--version`) 의도적으로
+  올리는 방법도 있습니다. 갱신은 수동이 되지만 예측 가능합니다.
 
 ## 도구
 

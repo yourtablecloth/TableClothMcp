@@ -46,21 +46,27 @@ description: >-
 Claude Code:
 
 ```bash
-# npx (Node 사용자, .NET 불필요)
-claude mcp add --transport stdio --scope user tablecloth -- npx -y tablecloth-mcp
+# npx (Node 사용자, .NET 불필요). npx 는 캐시된 옛 버전을 쓸 수 있어 @latest 를 붙인다.
+claude mcp add --transport stdio --scope user tablecloth -- npx -y tablecloth-mcp@latest
 
-# 또는 dnx (.NET 10 SDK 사용자)
+# 또는 dnx (.NET 10 SDK 사용자). dnx 는 버전 미명시 시 실행마다 최신을 해석한다.
 claude mcp add --transport stdio --scope user tablecloth -- dnx TableCloth.Mcp --yes
 ```
 
 Claude Desktop: `claude_desktop_config.json`의 `mcpServers`에 아래를 넣고 앱을 재시작한다.
 
 ```jsonc
-{ "mcpServers": { "tablecloth": { "command": "npx", "args": ["-y", "tablecloth-mcp"] } } }
+{ "mcpServers": { "tablecloth": { "command": "npx", "args": ["-y", "tablecloth-mcp@latest"] } } }
 ```
 
 등록은 사용자의 환경을 바꾸는 일이라 임의로 실행하지 않는다. 위 명령이나 설정을 제시하고, 사용자가
 직접 등록한 뒤 세션(또는 앱)을 새로 시작하도록 안내한다.
+
+## 업데이트
+
+새 버전은 클라이언트가 서버 프로세스를 다시 띄울 때 반영된다. Claude Desktop은 앱 재시작, Claude Code는
+새 세션이 필요하다. 카탈로그(사이트와 정책)는 런타임에 라이브로 받아오므로 서버 버전을 올리지 않아도
+갱신된다. 사용자가 최신 도구 동작을 못 받는 것 같으면 클라이언트를 재시작하도록 안내한다.
 
 ## 제약
 
