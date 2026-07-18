@@ -127,13 +127,9 @@ jobs:
         run: node scripts/assemble-npm.mjs ${{ needs.meta.outputs.version }}
       # 각 패키지에 npmjs.com 의 trusted publisher(repo + workflow=release.yml + environment=production)가
       # 설정돼 있어야 한다. 패키지가 존재해야 설정 가능 → 최초 1회는 부트스트랩 토큰 필요(README 참고).
-      - name: Publish platform packages, then the launcher
+      # 각 패키지에 trusted publisher 가 설정돼 있어 토큰 없이 OIDC 로 게시된다(provenance 자동 첨부).
+      - name: Publish platform packages, then the launcher (OIDC)
         shell: bash
-        env:
-          # 부트스트랩 fallback: trusted publisher 설정 전(패키지 미존재) 최초 게시는 이 토큰으로 나간다.
-          # 각 패키지에 trusted publisher 를 설정하고 나면 OIDC 가 우선되어 이 토큰은 사용되지 않으므로
-          # NPM_TOKEN secret 은 그 시점에 삭제해도 된다(그때부턴 완전 무-토큰 OIDC 게시).
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           set -e
           # 플랫폼 패키지를 먼저 게시(런처의 optionalDependency 가 해석 가능해야 하므로), 런처는 마지막.
