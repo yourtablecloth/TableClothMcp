@@ -80,6 +80,7 @@ public sealed record WsbResponse
 public sealed record LaunchResponse
 {
     public required bool Launched { get; init; }
+    public string? Runner { get; init; }
     public IReadOnlyList<string>? SiteIds { get; init; }
     public IReadOnlyList<string>? UnknownIdsIgnored { get; init; }
     public string? WsbPath { get; init; }

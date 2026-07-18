@@ -47,51 +47,81 @@ public sealed partial class SandboxTools
             SiteIds = valid,
             UnknownIdsIgnored = unknown.Count > 0 ? unknown : null,
             Wsb = BuildWsb(valid),
-            Usage = "이 XML 을 .wsb 파일로 저장해 더블클릭하면 Windows Sandbox 가 뜨고, 지정한 사이트들이 보안프로그램과 함께 준비됩니다. (Windows 11 + Windows Sandbox 기능 필요)",
+            Usage = "이 XML 을 .wsb 파일로 저장해 실행하면 지정한 사이트들이 보안프로그램과 함께 준비됩니다. " +
+                    "러너: Windows → Windows Sandbox(Windows 11 기능, 더블클릭), macOS(Apple Silicon) → macSandbox(`MacSandbox <file>.wsb`).",
         };
     }
 
     [McpServerTool(Name = "launch_sandbox")]
     [Description(
-        "선택한 service id 들로 Windows Sandbox 를 즉시 실행한다(Windows 전용). " +
-        ".wsb 를 임시 생성해 WindowsSandbox.exe 로 띄운다. 샌드박스 안에서 해당 사이트들의 보안프로그램이 " +
-        "자동 설치되고 사이트가 열린다. 로그인/인증/실제 업무는 사용자가 직접 진행한다(RPA 아님).")]
+        "선택한 service id 들로 일회용 샌드박스를 즉시 실행한다. .wsb 를 임시 생성해 OS 에 맞는 러너로 띄운다: " +
+        "Windows → Windows Sandbox(WindowsSandbox.exe), macOS(Apple Silicon) → macSandbox. " +
+        "샌드박스 안에서 해당 사이트들의 보안프로그램이 자동 설치되고 사이트가 열린다. " +
+        "그 외 OS 는 generate_wsb 로 .wsb 를 받아 지원 러너에서 실행. 로그인/인증/업무는 사용자 몫(RPA 아님).")]
     public static async Task<LaunchResponse> LaunchSandbox(
         CatalogClient catalog,
         [Description("열 카탈로그 service id 목록(1개 이상). 여러 개면 한 샌드박스에 병합 설치된다.")] string[] serviceIds,
         CancellationToken ct = default)
     {
-        if (!OperatingSystem.IsWindows())
+        var (valid, unknown) = await ResolveIdsAsync(catalog, serviceIds, ct).ConfigureAwait(false);
+        if (valid.Count == 0)
+            return new LaunchResponse { Launched = false, Error = "유효한 service id 가 없습니다.", UnknownIds = unknown, Hint = "search_services 로 확인하세요." };
+
+        // OS 별 러너를 고른다. 같은 .wsb 를 Windows Sandbox / macSandbox 가 공유한다(PARAMETERIZED_WSB_SPEC §8).
+        string runner;
+        ProcessStartInfo psi;
+        if (OperatingSystem.IsWindows())
+        {
+            runner = "Windows Sandbox";
+            psi = new ProcessStartInfo("WindowsSandbox.exe") { UseShellExecute = true };
+        }
+        else if (OperatingSystem.IsMacOS())
+        {
+            var mac = ResolveMacSandbox();
+            if (mac is null)
+            {
+                return new LaunchResponse
+                {
+                    Launched = false,
+                    Error = "macSandbox(MacSandbox) 를 찾지 못했습니다.",
+                    Hint = "macSandbox 를 설치(Applications) 하거나 generate_wsb 로 .wsb 를 받아 실행하세요. " +
+                           "macSandbox 는 Apple Silicon + macOS 26(Tahoe) 이 필요합니다. https://github.com/yourtablecloth/macSandbox",
+                };
+            }
+            runner = "macSandbox";
+            psi = new ProcessStartInfo(mac) { UseShellExecute = false };
+        }
+        else
         {
             return new LaunchResponse
             {
                 Launched = false,
-                Error = "launch_sandbox 는 Windows(Windows Sandbox 기능 필요)에서만 동작합니다.",
-                Hint = "다른 OS 에서는 generate_wsb 로 .wsb 텍스트를 받아 Windows 사용자에게 전달하세요.",
+                Error = "이 OS 에서는 아직 샌드박스 자동 실행을 지원하지 않습니다.",
+                Hint = "generate_wsb 로 .wsb 를 받아 지원 러너(Windows Sandbox / macSandbox)에서 실행하세요.",
             };
         }
-
-        var (valid, unknown) = await ResolveIdsAsync(catalog, serviceIds, ct).ConfigureAwait(false);
-        if (valid.Count == 0)
-            return new LaunchResponse { Launched = false, Error = "유효한 service id 가 없습니다.", UnknownIds = unknown, Hint = "search_services 로 확인하세요." };
 
         var wsb = BuildWsb(valid);
         var path = Path.Combine(Path.GetTempPath(), $"tablecloth-{Guid.NewGuid():n}.wsb");
         await File.WriteAllTextAsync(path, wsb, ct).ConfigureAwait(false);
 
+        // 러너별로 경로 인자를 확정한다(Windows 는 Arguments, macOS 는 ArgumentList).
+        if (OperatingSystem.IsWindows())
+            psi.Arguments = $"\"{path}\"";
+        else
+            psi.ArgumentList.Add(path);
+
         try
         {
-            using var proc = Process.Start(new ProcessStartInfo("WindowsSandbox.exe", $"\"{path}\"")
-            {
-                UseShellExecute = true,
-            });
+            using var proc = Process.Start(psi);
             return new LaunchResponse
             {
                 Launched = true,
+                Runner = runner,
                 SiteIds = valid,
                 UnknownIdsIgnored = unknown.Count > 0 ? unknown : null,
                 WsbPath = path,
-                Note = "샌드박스가 뜨면 준비(보안프로그램 설치)에 수 분 걸릴 수 있습니다. 인증/로그인은 사용자가 직접 진행하세요.",
+                Note = $"{runner} 준비(보안프로그램 설치)에 수 분 걸릴 수 있습니다. 인증/로그인은 사용자가 직접 진행하세요.",
             };
         }
         catch (Exception ex)
@@ -99,11 +129,32 @@ public sealed partial class SandboxTools
             return new LaunchResponse
             {
                 Launched = false,
-                Error = $"WindowsSandbox.exe 실행 실패: {ex.Message}",
-                Hint = "Windows 11 에서 'Windows Sandbox' 선택적 기능이 설치/활성화돼 있어야 합니다.",
+                Runner = runner,
+                Error = $"{runner} 실행 실패: {ex.Message}",
+                Hint = "러너(Windows Sandbox 기능 / macSandbox 앱)가 설치·활성화돼 있는지 확인하세요.",
                 WsbPath = path,
             };
         }
+    }
+
+    // macSandbox(MacSandbox) 위치를 찾는다: PATH → 표준 .app 경로. 없으면 null.
+    private static string? ResolveMacSandbox()
+    {
+        const string appPath = "/Applications/MacSandbox.app/Contents/MacOS/MacSandbox";
+        if (File.Exists(appPath))
+            return appPath;
+
+        var pathEnv = Environment.GetEnvironmentVariable("PATH");
+        if (!string.IsNullOrEmpty(pathEnv))
+        {
+            foreach (var dir in pathEnv.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
+            {
+                var full = Path.Combine(dir, "MacSandbox");
+                if (File.Exists(full))
+                    return full;
+            }
+        }
+        return null;
     }
 
     private static async Task<(List<string> valid, List<string> unknown)> ResolveIdsAsync(

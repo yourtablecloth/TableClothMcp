@@ -56,33 +56,38 @@ jobs:
       - name: Push to NuGet
         run: dotnet nuget push "out/*.nupkg" -k "${{ secrets.NUGET_API_KEY }}" -s https://api.nuget.org/v3/index.json --skip-duplicate
 
-  # ---- npx 레인: 플랫폼별 NativeAOT 빌드 ----
+  # ---- npx 레인: 플랫폼별 NativeAOT 빌드 (NativeAOT 는 타깃 OS 에서 빌드해야 함) ----
   aot:
     needs: meta
     strategy:
       fail-fast: false
       matrix:
         include:
-          - rid: win-x64
-            runner: windows-latest
-          - rid: win-arm64
-            runner: windows-11-arm
+          # windows 러너 이미지는 "Desktop development with C++"(MSVC 링커)를 포함 → NativeAOT 링크 성립.
+          - { rid: win-x64,     runner: windows-latest,   bin: tablecloth-mcp.exe }
+          - { rid: win-arm64,   runner: windows-11-arm,   bin: tablecloth-mcp.exe }
+          # macOS 는 Apple Silicon(arm64)만 — macSandbox 가 Apple Silicon 전용이라 동일하게 arm64만 낸다.
+          - { rid: osx-arm64,   runner: macos-latest,     bin: tablecloth-mcp }
+          # Linux(디스커버리/generate_wsb 용). 자동 실행 러너는 추후(현재 macSandbox 는 macOS 전용).
+          - { rid: linux-x64,   runner: ubuntu-latest,    bin: tablecloth-mcp }
+          - { rid: linux-arm64, runner: ubuntu-24.04-arm, bin: tablecloth-mcp }
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
-      # windows 러너 이미지는 "Desktop development with C++" 워크로드(MSVC 링커)를 포함하므로
-      # NativeAOT 최종 링크가 성립한다(본 프로젝트 부트스트래퍼 빌드와 동일 전제).
+      # Linux NativeAOT 는 clang + zlib 개발 헤더가 필요하다(macOS 는 Xcode CLT, Windows 는 MSVC 로 충족).
+      - name: Install Linux AOT toolchain
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y clang zlib1g-dev
       - name: Publish NativeAOT (${{ matrix.rid }})
-        shell: pwsh
         run: dotnet publish -r ${{ matrix.rid }} -c Release -p:PublishAot=true -p:PackAsTool=false -p:Version=${{ needs.meta.outputs.version }} -o out
       - name: Upload native binary
         uses: actions/upload-artifact@v4
         with:
           name: aot-${{ matrix.rid }}
-          path: out/tablecloth-mcp.exe
+          path: out/${{ matrix.bin }}
           if-no-files-found: error
 
   # ---- npx 레인: npm 패키지 조립 + 게시 ----

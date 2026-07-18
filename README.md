@@ -28,8 +28,8 @@
 | `get_service(id)` | 특정 서비스 상세(필요 보안패키지 전체, 호환성 주의, 아이콘 URL) |
 | `list_categories()` | 카테고리별 개수 |
 | `list_companions(query?)` | 보조 프로그램(공용 SW) 목록 |
-| `generate_wsb(serviceIds[])` | 실행용 `.wsb` XML 텍스트 생성(모든 OS). 사용자에게 건네 더블클릭 |
-| `launch_sandbox(serviceIds[])` | Windows 에서 즉시 샌드박스 실행(WindowsSandbox.exe) |
+| `generate_wsb(serviceIds[])` | 실행용 `.wsb` XML 텍스트 생성(모든 OS). 지원 러너에서 실행 |
+| `launch_sandbox(serviceIds[])` | 즉시 샌드박스 실행 — Windows→Windows Sandbox, macOS(Apple Silicon)→[macSandbox](https://github.com/yourtablecloth/macSandbox) |
 
 ## 배포/실행 레인
 
@@ -56,11 +56,15 @@ dotnet pack -c Release                          # bin/Release/TableCloth.Mcp.<ve
 ### 레인 B — npx / NativeAOT 바이너리
 
 Node 생태계 도달 + .NET 미설치 사용자를 위해, 플랫폼별 **NativeAOT** 바이너리를 npm 패키지로 감싸
-`npx @tablecloth/mcp` 로 실행한다(플랫폼별 바이너리를 고르는 JS shim + `optionalDependencies`).
+`npx -y tablecloth-mcp` 로 실행한다(런처 `tablecloth-mcp` + 플랫폼별 `optionalDependencies`, JS shim 이 조합을 선택).
 
 ```jsonc
-{ "mcpServers": { "tablecloth": { "command": "npx", "args": ["-y", "@tablecloth/mcp"] } } }
+{ "mcpServers": { "tablecloth": { "command": "npx", "args": ["-y", "tablecloth-mcp"] } } }
 ```
+
+**프리빌드 플랫폼:** `win32-x64` · `win32-arm64` · `darwin-arm64` · `linux-x64` · `linux-arm64`.
+(macOS 는 macSandbox 와 동일하게 Apple Silicon 만. Intel Mac 은 dnx 레인 사용.) 어느 OS 든 검색/`generate_wsb`
+는 동작하고, `launch_sandbox` 자동 실행은 러너가 있는 OS(Windows/ macOS)에서만.
 
 **AOT 호환은 코드상 완료·검증됨:**
 - 도구 반환을 익명 객체 → **선언형 record + 소스젠 `AppJsonContext`(JsonSerializerContext)** 로 전환.
@@ -72,14 +76,17 @@ Node 생태계 도달 + .NET 미설치 사용자를 위해, 플랫폼별 **Nativ
 **네이티브 바이너리 만들기(표준 NativeAOT 전제: C++ 빌드 도구 필요):**
 
 ```bash
-# VS "Desktop development with C++" 워크로드가 있는 환경(로컬 개발자 프롬프트 / CI)에서:
-dotnet publish -r win-x64   -c Release -p:PublishAot=true -p:PackAsTool=false
-dotnet publish -r win-arm64 -c Release -p:PublishAot=true -p:PackAsTool=false
-# 산출: bin/Release/net10.0/<rid>/publish/tablecloth-mcp.exe (self-contained 단일 네이티브)
+# NativeAOT 는 타깃 OS 에서 빌드해야 한다(Win=MSVC, macOS=Xcode CLT, Linux=clang+zlib1g-dev).
+dotnet publish -r win-x64     -c Release -p:PublishAot=true -p:PackAsTool=false   # windows
+dotnet publish -r win-arm64   -c Release -p:PublishAot=true -p:PackAsTool=false   # windows(arm)
+dotnet publish -r osx-arm64   -c Release -p:PublishAot=true -p:PackAsTool=false   # macOS(Apple Silicon)
+dotnet publish -r linux-x64   -c Release -p:PublishAot=true -p:PackAsTool=false   # linux
+dotnet publish -r linux-arm64 -c Release -p:PublishAot=true -p:PackAsTool=false   # linux(arm)
+# 산출: bin/Release/net10.0/<rid>/publish/tablecloth-mcp[.exe] (self-contained 단일 네이티브)
 ```
 
-이후 각 RID exe 를 npm 패키지(`@tablecloth/mcp` + 플랫폼별 optionalDependency)로 감싸 게시하면
-`npx` 로 .NET 설치 없이 실행된다. (RID 별 빌드/링크는 CI에서 수행 권장 — 부트스트래퍼와 동일하게.)
+RID 별 빌드/링크는 각 OS 러너에서 수행한다([`release.yml`](.github/workflows/release.yml)의 `aot` 매트릭스가
+자동화). 이후 `scripts/assemble-npm.mjs`가 런처 + 플랫폼 패키지를 조립해 npm 에 게시한다.
 
 ## 릴리스 (동일 태그 → 두 채널 동시)
 
@@ -106,7 +113,7 @@ dotnet publish -r win-arm64 -c Release -p:PublishAot=true -p:PackAsTool=false
 
 ## 제약
 
-- `launch_sandbox` 는 Windows 11 + "Windows Sandbox" 선택적 기능 필요. 그 외 OS 는 `generate_wsb` 사용.
+- `launch_sandbox` 자동 실행 러너: **Windows** = Windows 11 "Windows Sandbox" 선택적 기능, **macOS** = [macSandbox](https://github.com/yourtablecloth/macSandbox)(Apple Silicon + macOS 26). 러너가 없는 OS(리눅스 등)는 `generate_wsb` 로 `.wsb` 를 받아 지원 러너에서 실행. (macSandbox 가 QEMU 기반이라 리눅스 러너는 추후 확장 여지가 있다.)
 - 인증이 필요한 액션은 자동화하지 않는다(무설치 레인은 호스트 파일 접근이 없어 파일 인증서 반입 불가 → 모바일/간편인증 전제).
 - 카탈로그에 없는 서비스는 실행 대상이 아니다(제보는 식탁보 카탈로그로).
 

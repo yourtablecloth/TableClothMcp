@@ -6,6 +6,7 @@
 // MCP stdio transport. No .NET runtime required.
 
 const { spawnSync } = require('node:child_process');
+const { chmodSync } = require('node:fs');
 
 function resolveBinary() {
   const platform = process.platform; // 'win32' | 'darwin' | 'linux'
@@ -27,6 +28,11 @@ if (!bin) {
     `Alternatively run the .NET tool (needs .NET 10 SDK):  dnx TableCloth.Mcp\n`
   );
   process.exit(1);
+}
+
+// npm 이 실행 비트를 잃은 경우를 대비해 unix 에서 방어적으로 +x (실패는 무시).
+if (process.platform !== 'win32') {
+  try { chmodSync(bin, 0o755); } catch { /* read-only install etc. */ }
 }
 
 const child = spawnSync(bin, process.argv.slice(2), { stdio: 'inherit' });

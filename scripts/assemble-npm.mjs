@@ -7,7 +7,7 @@
 // Output  : dist/npm/tablecloth-mcp/                  (launcher, version + optionalDependencies stamped)
 //           dist/npm/tablecloth-mcp-<platform>-<cpu>/ (one per platform, contains the native binary)
 
-import { mkdirSync, cpSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
+import { mkdirSync, cpSync, writeFileSync, readFileSync, existsSync, chmodSync } from 'node:fs';
 import { join } from 'node:path';
 
 const version = process.argv[2];
@@ -17,9 +17,13 @@ if (!version || !/^\d+\.\d+\.\d+/.test(version)) {
 }
 
 // 새 플랫폼을 추가하려면 여기에 rid/os/cpu 한 줄만 넣고, release.yml 의 aot 매트릭스에도 같은 rid 를 추가한다.
+// os/cpu 는 Node 의 process.platform / process.arch 값과 일치해야 한다(런처 cli.js 가 그 조합으로 패키지를 찾는다).
 const platforms = [
   { rid: 'win-x64', os: 'win32', cpu: 'x64', exe: 'tablecloth-mcp.exe' },
   { rid: 'win-arm64', os: 'win32', cpu: 'arm64', exe: 'tablecloth-mcp.exe' },
+  { rid: 'osx-arm64', os: 'darwin', cpu: 'arm64', exe: 'tablecloth-mcp' },
+  { rid: 'linux-x64', os: 'linux', cpu: 'x64', exe: 'tablecloth-mcp' },
+  { rid: 'linux-arm64', os: 'linux', cpu: 'arm64', exe: 'tablecloth-mcp' },
 ];
 
 const outRoot = 'dist/npm';
@@ -36,6 +40,8 @@ for (const p of platforms) {
   const dir = join(outRoot, pkgName);
   mkdirSync(dir, { recursive: true });
   cpSync(artifact, join(dir, p.exe));
+  // upload-artifact 는 실행 비트를 보존하지 않으므로 unix 바이너리는 다시 +x 를 준다(npm 이 이 모드로 publish).
+  if (p.os !== 'win32') chmodSync(join(dir, p.exe), 0o755);
   // 바이너리를 담은 패키지도 각각 라이선스를 동봉한다(AGPL 배포 준수).
   cpSync('LICENSE-AGPL', join(dir, 'LICENSE-AGPL'));
   cpSync('LICENSE-COMMERCIAL', join(dir, 'LICENSE-COMMERCIAL'));

@@ -18,7 +18,8 @@ setup frustration and helping you find the right site.
 ```
 
 No .NET runtime required — a platform-native (NativeAOT) binary is fetched as an
-optional dependency. Prebuilt for **win32-x64** and **win32-arm64**.
+optional dependency. Prebuilt for **win32-x64**, **win32-arm64**, **darwin-arm64**,
+**linux-x64**, **linux-arm64**.
 
 > Also available as a .NET tool: `dnx TableCloth.Mcp` (needs the .NET 10 SDK).
 
@@ -26,8 +27,10 @@ optional dependency. Prebuilt for **win32-x64** and **win32-arm64**.
 
 `search_services` · `get_service` · `list_categories` · `list_companions` · `generate_wsb` · `launch_sandbox`
 
-`launch_sandbox` requires Windows 11 with the *Windows Sandbox* optional feature. On other
-platforms use `generate_wsb` to produce a `.wsb` file to run on a Windows machine.
+`launch_sandbox` picks a runner per OS: **Windows** → Windows Sandbox (Windows 11 optional feature);
+**macOS** → [macSandbox](https://github.com/yourtablecloth/macSandbox) (Apple Silicon, macOS 26).
+On other platforms use `generate_wsb` to produce a `.wsb` for a supported runner. Search and
+`generate_wsb` work everywhere.
 
 Catalog + launch assets are consumed from public sources
 (`yourtablecloth.app`, GitHub Releases); this package does not bundle them.
