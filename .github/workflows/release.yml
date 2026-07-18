@@ -181,8 +181,22 @@ jobs:
         run: |
           set -e
           TAG="${GITHUB_REF_NAME}"
-          if gh release view "$TAG" --repo "${{ github.repository }}" >/dev/null 2>&1; then
-            gh release upload "$TAG" release-assets/* --repo "${{ github.repository }}" --clobber
+          VER="${{ needs.meta.outputs.version }}"
+          REPO="${{ github.repository }}"
+
+          # CHANGELOG.md 에서 이 버전 섹션만 뽑아 릴리스 노트로 쓴다(없으면 자동 생성으로 폴백).
+          # 정규식 브래킷 이스케이프 이슈를 피하려고 index() 리터럴 매칭을 쓴다.
+          awk -v ver="$VER" '
+            index($0, "## [" ver "]")==1 { flag=1; next }
+            flag && index($0, "## [")==1 { exit }
+            flag { print }
+          ' CHANGELOG.md | sed "/./,\$!d" > notes.md
+
+          if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+            gh release upload "$TAG" release-assets/* --repo "$REPO" --clobber
+            [ -s notes.md ] && gh release edit "$TAG" --repo "$REPO" --notes-file notes.md || true
+          elif [ -s notes.md ]; then
+            gh release create "$TAG" release-assets/* --repo "$REPO" --title "$TAG" --notes-file notes.md
           else
-            gh release create "$TAG" release-assets/* --repo "${{ github.repository }}" --title "$TAG" --generate-notes
+            gh release create "$TAG" release-assets/* --repo "$REPO" --title "$TAG" --generate-notes
           fi

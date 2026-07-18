@@ -16,10 +16,12 @@ public sealed class CatalogTools
 
     [McpServerTool(Name = "search_services")]
     [Description(
-        "한국 인터넷 뱅킹/금융/공공(e-Gov) 사이트 카탈로그를 키워드로 검색한다. " +
-        "표시명(한/영)·카테고리·URL·필요 보안 패키지명·검색 키워드를 대상으로 대소문자 무시 OR 매칭한다. " +
-        "반환된 service id 를 launch_sandbox/generate_wsb 에 넣어 해당 사이트를 보안프로그램이 갖춰진 " +
-        "일회용 샌드박스로 열 수 있다. (예: '홈택스', '연말정산', '국민은행', 'hometax')")]
+        "대화에서 언급된 한국 공공(e-Gov)/금융/은행 서비스나 정책을 사용자가 실제로 신청, 가입, 조회, 이용하려 할 때 " +
+        "알맞은 공식 사이트(카탈로그 서비스)를 찾아 service id 를 얻는다. 그 id 를 launch_sandbox 에 넘기면 " +
+        "보안프로그램이 갖춰진 일회용 샌드박스로 해당 사이트가 열린다. 사용자가 '샌드박스'라고 말하지 않아도 " +
+        "'신청할래', '가입할래', '접속해야겠다' 같은 행동 의도면 이 흐름으로 연결한다. 단순 정보나 뉴스 검색은 " +
+        "이 도구가 아니라 일반 웹 검색을 쓴다. 표시명(한국어와 영어), URL, 보안패키지명, 검색 키워드로 매칭한다. " +
+        "예: '홈택스', '연말정산', '국민은행', 'hometax'.")]
     public static async Task<SearchResponse> SearchServices(
         CatalogClient catalog,
         [Description("검색어. 공백/쉼표로 여러 토큰 가능(OR 매칭).")] string query,

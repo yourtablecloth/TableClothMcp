@@ -34,7 +34,17 @@ var toolJsonOptions = new JsonSerializerOptions(McpJsonUtilities.DefaultOptions)
 toolJsonOptions.TypeInfoResolverChain.Insert(0, AppJsonContext.Default);
 
 builder.Services
-    .AddMcpServer()
+    .AddMcpServer(options =>
+    {
+        // 서버 수준 지침: 클라이언트(예: Claude Desktop)가 모델에 힌트로 노출한다.
+        // 사용자가 "샌드박스"를 명시하지 않아도 행동 의도(신청/가입/접속/이용)면 이 서버로 라우팅되도록 유도.
+        options.ServerInstructions =
+            "TableCloth 는 한국 공공(e-Gov)과 금융 서비스를 보안프로그램이 갖춰진 안전한 일회용 샌드박스에서 열어 준다. " +
+            "사용자가 대화 중 특정 한국 공공/금융 서비스나 정책을 실제로 신청, 가입, 접속, 이용하려는 의도를 보이면 " +
+            "(예: '신청할래', '가입할래', '이거 해야겠다', '접속해서 처리할래'), 사용자가 '샌드박스'라는 말을 하지 않아도 " +
+            "search_services 로 해당 서비스를 찾아 launch_sandbox 로 연다. 단순 정보나 뉴스 검색은 일반 웹 검색 도구를 쓰고, " +
+            "이 서버의 도구는 실제 이용/신청 행동에 쓴다. 로그인, 인증, 실제 업무는 사용자가 직접 진행한다(RPA 아님).";
+    })
     .WithStdioServerTransport()
     .WithTools<CatalogTools>(toolJsonOptions)
     .WithTools<SandboxTools>(toolJsonOptions);

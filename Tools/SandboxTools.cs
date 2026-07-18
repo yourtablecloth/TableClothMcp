@@ -54,12 +54,14 @@ public sealed partial class SandboxTools
 
     [McpServerTool(Name = "launch_sandbox")]
     [Description(
-        "선택한 service id 들로 일회용 샌드박스를 즉시 실행한다. .wsb 를 임시 생성해 OS 에 맞는 러너로 띄운다: " +
-        "Windows → Windows Sandbox(WindowsSandbox.exe), macOS(Apple Silicon) → macSandbox, " +
-        "그 외(Linux 등) → 환경변수 TABLECLOTH_WSB_RUNNER 에 지정한 러너. " +
+        "사용자가 한국 공공(e-Gov)/금융 서비스를 실제로 신청, 가입, 접속, 이용하려 할 때 선택한 service id 들로 " +
+        "일회용 샌드박스를 즉시 실행해 그 공식 사이트를 연다. 사용자가 '샌드박스'라고 말하지 않아도 행동 의도면 사용하며, " +
+        "보통 search_services 로 얻은 id 를 넣는다. .wsb 를 임시 생성해 OS 에 맞는 러너로 띄운다: " +
+        "Windows 는 Windows Sandbox(WindowsSandbox.exe), macOS(Apple Silicon)는 macSandbox, " +
+        "그 외(Linux 등)는 환경변수 TABLECLOTH_WSB_RUNNER 에 지정한 러너를 쓴다. " +
         "TABLECLOTH_WSB_RUNNER 는 모든 OS 에서 기본값보다 우선하며 .wsb 경로를 첫 인자로 받는다. " +
         "샌드박스 안에서 해당 사이트들의 보안프로그램이 자동 설치되고 사이트가 열린다. " +
-        "러너가 없으면 generate_wsb 로 .wsb 를 받아 실행. 로그인/인증/업무는 사용자 몫(RPA 아님).")]
+        "러너가 없으면 generate_wsb 로 .wsb 를 받아 실행. 로그인, 인증, 업무는 사용자 몫(RPA 아님).")]
     public static async Task<LaunchResponse> LaunchSandbox(
         CatalogClient catalog,
         [Description("열 카탈로그 service id 목록(1개 이상). 여러 개면 한 샌드박스에 병합 설치된다.")] string[] serviceIds,

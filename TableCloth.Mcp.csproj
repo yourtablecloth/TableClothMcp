@@ -32,7 +32,7 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>tablecloth-mcp</ToolCommandName>
     <PackageId>TableCloth.Mcp</PackageId>
-    <Version>0.1.2</Version>
+    <Version>0.1.3</Version>
     <Authors>TableCloth Project</Authors>
     <Copyright>Copyright (c) Jung Hyun, Nam (rkttu)</Copyright>
     <Description>MCP server that finds Korean e-Gov/finance sites and opens them in a clean, disposable Windows Sandbox with the required security software. Discovery + safe-launch only (no RPA). Dual-licensed: AGPL-3.0-or-later, or a commercial license (see LICENSE-COMMERCIAL).</Description>

@@ -1,5 +1,6 @@
 # TableCloth MCP
 
+[![Release](https://img.shields.io/github/v/release/yourtablecloth/TableClothMcp?logo=github&label=release)](https://github.com/yourtablecloth/TableClothMcp/releases/latest)
 [![npm](https://img.shields.io/npm/v/tablecloth-mcp?logo=npm&label=npm)](https://www.npmjs.com/package/tablecloth-mcp)
 [![NuGet](https://img.shields.io/nuget/v/TableCloth.Mcp?logo=nuget&label=NuGet)](https://www.nuget.org/packages/TableCloth.Mcp)
 [![License](https://img.shields.io/badge/license-AGPL--3.0%20or%20Commercial-blue)](LICENSE-AGPL)
@@ -89,6 +90,20 @@ OS(Windows, macOS)에서만 됩니다.
 생성되는 `.wsb`는 무설치 Express 방식(`PARAMETERIZED_WSB_SPEC.md` 0.5절)을 따르며, 사이트 사전선택은
 `TABLECLOTH_SITE_IDS` 환경변수 채널로 전달됩니다.
 
+## 사용 팁: "샌드박스" 없이 의도만으로 연결하기
+
+정부 정책이나 금융 상품, 시사 현안을 이야기하다가 "그거 신청할래" 정도로만 말해도 이 서버로 연결되게
+하려면, Claude Desktop의 커스텀 지침(또는 프로젝트 지침)에 아래 문장을 넣어 두면 좋습니다.
+
+> 내가 한국 공공/금융 서비스나 정책을 실제로 신청하거나 이용하려는 뜻을 비치면(예: "신청할래", "가입할래",
+> "접속해서 처리할래"), 내가 "샌드박스"라고 말하지 않아도 TableCloth 도구로 해당 공식 사이트를 안전한
+> 샌드박스에서 열어줘. 단순 정보나 뉴스 검색은 기존 검색 도구를 써줘.
+
+도구 설명과 서버 instructions에도 같은 의도가 심어져 있어 지침 없이도 어느 정도 연결되지만, 위 지침을
+더하면 더 안정적으로 라우팅됩니다. 다른 검색 MCP(예: 웹 검색)와 함께 붙여 두면 정보 탐색은 그쪽으로 가고
+실제 신청과 이용은 이 서버로 갈라집니다. `launch_sandbox`의 실제 실행은 Windows(Windows Sandbox)나
+Apple Silicon Mac(macSandbox), 또는 `TABLECLOTH_WSB_RUNNER`를 지정한 환경에서 됩니다.
+
 ## 제약
 
 - `launch_sandbox`의 자동 실행 러너는 Windows에서는 Windows 11의 "Windows Sandbox" 선택적 기능,
@@ -100,36 +115,19 @@ OS(Windows, macOS)에서만 됩니다.
   없으므로 모바일이나 간편인증을 전제로 합니다.
 - 카탈로그에 없는 서비스는 실행 대상이 아닙니다. 제보는 식탁보 카탈로그로 하면 됩니다.
 
-## 릴리스와 게시
+## 릴리스
 
-버전 태그 하나(`vX.Y.Z`)를 밀면 [`.github/workflows/release.yml`](.github/workflows/release.yml)가
-dnx(NuGet)와 npx(npm) 두 채널을 같은 버전으로 함께 게시합니다. 워크플로우는 다음 잡으로 구성됩니다.
+버전 태그(`vX.Y.Z`)를 밀면 [`.github/workflows/release.yml`](.github/workflows/release.yml)가 같은
+버전으로 세 곳에 함께 게시합니다.
 
-- `nuget` 잡은 `dotnet pack` 후 `TableCloth.Mcp`를 nuget.org에 올립니다.
-- `aot` 잡은 매트릭스(win, osx, linux)에서 NativeAOT 바이너리를 빌드합니다.
-- `npm` 잡은 `scripts/assemble-npm.mjs`로 런처와 5개 플랫폼 패키지를 조립해 npmjs.org에 올립니다.
-- `github-release` 잡은 태그 푸시일 때 GitHub Release를 만들고, 5개 플랫폼 네이티브 바이너리와 nupkg를
-  첨부하며 릴리스 노트를 자동으로 생성합니다. 패키지 매니저를 거치지 않고 바이너리를 직접 받고 싶을 때 씁니다.
+- npm에 런처 `tablecloth-mcp`와 5개 플랫폼 패키지를 올립니다.
+- NuGet에 `TableCloth.Mcp` 툴 패키지를 올립니다.
+- GitHub Release에 5개 플랫폼 네이티브 바이너리와 nupkg를 첨부합니다. 패키지 매니저를 거치지 않고
+  바이너리를 바로 받고 싶을 때 씁니다.
 
-두 채널 모두 OIDC Trusted Publishing으로 게시하므로 장기 API 키나 토큰을 저장하지 않습니다. 게시 잡은
-`environment: production`과 `id-token: write`로 실행되며, 각 레지스트리에 신뢰 게시 정책이 설정되어
-있어야 합니다.
-
-- nuget.org 계정의 Trusted Publishing에 정책을 만듭니다. Repository Owner는 `yourtablecloth`,
-  Repository는 `TableClothMcp`, Workflow File은 `release.yml`, Environment는 `production`입니다.
-  워크플로우가 참조하는 값은 nuget.org 사용자명을 담은 `NUGET_USER` 시크릿 하나뿐입니다.
-- npmjs.com에서 런처 `tablecloth-mcp`와 5개 플랫폼 패키지 각각의 Settings에 Trusted Publisher를
-  GitHub Actions로 설정합니다. repo는 `yourtablecloth/TableClothMcp`, workflow는 `release.yml`,
-  environment는 `production`입니다.
-
-npm은 패키지가 존재해야 신뢰 게시를 설정할 수 있어서 최초 1회는 임시 토큰으로 부트스트랩이 필요합니다.
-첫 게시로 패키지를 만든 다음 각 패키지에 Trusted Publisher를 설정하면, 이후 릴리스는 토큰 없이 OIDC로만
-나가고 provenance가 자동으로 첨부됩니다. NuGet은 신규 패키지도 신뢰 게시로 바로 첫 게시가 되므로
-부트스트랩이 필요 없습니다.
-
-고정 IP allowlist(CIDR)는 권장하지 않습니다. GitHub 호스티드 러너의 IP 대역은 방대하고 주간 단위로
-바뀌어 GitHub도 allowlist 용도로는 권하지 않습니다. OIDC를 쓰면 재사용할 토큰 자체가 없으므로 그런
-보호가 필요하지 않습니다.
+npm과 NuGet은 OIDC Trusted Publishing으로 게시되어 장기 토큰을 저장하지 않으며, npm 패키지에는
+provenance가 자동으로 붙습니다. 변경 이력은 [CHANGELOG.md](CHANGELOG.md)에 정리하고, 새 버전을 낼 때는
+거기에 `## [X.Y.Z]` 섹션을 추가한 뒤 태그를 밀면 그 내용이 GitHub Release 노트가 됩니다.
 
 ## 개발: 네이티브 바이너리 빌드
 
