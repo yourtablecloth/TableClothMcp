@@ -67,6 +67,13 @@ jobs:
           user: ${{ secrets.NUGET_USER }}   # nuget.org 사용자명(이메일 아님)
       - name: Push to NuGet
         run: dotnet nuget push "out/*.nupkg" --api-key "${{ steps.nuget-login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
+      # GitHub Release 에 첨부하려고 nupkg 를 아티팩트로 넘긴다.
+      - name: Upload nupkg artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nupkg
+          path: out/*.nupkg
+          if-no-files-found: error
 
   # ---- npx 레인: 플랫폼별 NativeAOT 빌드 (NativeAOT 는 타깃 OS 에서 빌드해야 함) ----
   aot:
@@ -126,8 +133,7 @@ jobs:
       - name: Assemble npm packages
         run: node scripts/assemble-npm.mjs ${{ needs.meta.outputs.version }}
       # 각 패키지에 npmjs.com 의 trusted publisher(repo + workflow=release.yml + environment=production)가
-      # 설정돼 있어야 한다. 패키지가 존재해야 설정 가능 → 최초 1회는 부트스트랩 토큰 필요(README 참고).
-      # 각 패키지에 trusted publisher 가 설정돼 있어 토큰 없이 OIDC 로 게시된다(provenance 자동 첨부).
+      # 설정돼 있어, 토큰 없이 OIDC 로 게시되고 provenance 가 자동 첨부된다.
       - name: Publish platform packages, then the launcher (OIDC)
         shell: bash
         run: |
@@ -137,3 +143,46 @@ jobs:
             echo "publishing $dir"; npm publish "$dir" --access public
           done
           npm publish "dist/npm/tablecloth-mcp/" --access public
+
+  # ---- GitHub Release (태그 푸시에만): 네이티브 바이너리 + nupkg 첨부 + 릴리스 노트 자동 생성 ----
+  github-release:
+    needs: [meta, nuget, aot, npm]
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # 릴리스 생성/자산 업로드
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Stage release assets
+        shell: bash
+        run: |
+          set -e
+          mkdir -p release-assets
+          # 네이티브 바이너리를 플랫폼 식별 이름으로 정리(npm/NuGet 없이 직접 받는 용도).
+          for rid in win-x64 win-arm64 osx-arm64 linux-x64 linux-arm64; do
+            src=$(ls artifacts/aot-$rid/* 2>/dev/null | head -1)
+            [ -n "$src" ] || { echo "missing native binary for $rid"; exit 1; }
+            case "$rid" in
+              win-*) cp "$src" "release-assets/tablecloth-mcp-$rid.exe" ;;
+              *)     cp "$src" "release-assets/tablecloth-mcp-$rid" ;;
+            esac
+          done
+          # .NET tool nupkg 도 함께 첨부.
+          cp artifacts/nupkg/*.nupkg release-assets/ 2>/dev/null || true
+          ls -la release-assets
+      - name: Create or update GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -e
+          TAG="${GITHUB_REF_NAME}"
+          if gh release view "$TAG" --repo "${{ github.repository }}" >/dev/null 2>&1; then
+            gh release upload "$TAG" release-assets/* --repo "${{ github.repository }}" --clobber
+          else
+            gh release create "$TAG" release-assets/* --repo "${{ github.repository }}" --title "$TAG" --generate-notes
+          fi

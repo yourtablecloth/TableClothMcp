@@ -68,7 +68,7 @@ OS(Windows, macOS)에서만 됩니다.
 | `list_categories()` | 카테고리별 개수를 반환합니다 |
 | `list_companions(query?)` | 보조 프로그램(공용 소프트웨어) 목록을 반환합니다 |
 | `generate_wsb(serviceIds[])` | 실행용 `.wsb` XML 텍스트를 생성합니다(모든 OS). 지원 러너에서 실행합니다 |
-| `launch_sandbox(serviceIds[])` | 즉시 샌드박스를 실행합니다. Windows는 Windows Sandbox, macOS(Apple Silicon)는 [macSandbox](https://github.com/yourtablecloth/macSandbox)를 씁니다 |
+| `launch_sandbox(serviceIds[])` | 즉시 샌드박스를 실행합니다. Windows는 Windows Sandbox, macOS(Apple Silicon)는 [macSandbox](https://github.com/yourtablecloth/macSandbox), 그 외(Linux 등)는 `TABLECLOTH_WSB_RUNNER` 환경변수로 지정한 러너를 씁니다 |
 
 ## 예시 흐름 (연말정산)
 
@@ -93,8 +93,9 @@ OS(Windows, macOS)에서만 됩니다.
 
 - `launch_sandbox`의 자동 실행 러너는 Windows에서는 Windows 11의 "Windows Sandbox" 선택적 기능,
   macOS에서는 [macSandbox](https://github.com/yourtablecloth/macSandbox)(Apple Silicon, macOS 26)입니다.
-  러너가 없는 OS(리눅스 등)에서는 `generate_wsb`로 `.wsb`를 받아 지원 러너에서 실행하면 됩니다.
-  macSandbox가 QEMU 기반이라 리눅스 러너는 앞으로 확장할 여지가 있습니다.
+  리눅스처럼 기본 러너가 없는 OS에서는 `TABLECLOTH_WSB_RUNNER` 환경변수에 `.wsb` 경로를 첫 인자로 받는
+  러너 명령(예: QEMU 기반 스크립트)을 지정하면 자동으로 실행합니다. 이 환경변수는 모든 OS에서 기본값보다
+  우선하므로 사용자 지정 러너를 붙일 때도 씁니다. 지정이 없으면 `generate_wsb`로 `.wsb`를 받아 실행하면 됩니다.
 - 인증이 필요한 동작은 자동화하지 않습니다. 무설치 방식은 호스트 파일 접근이 없어 파일 인증서를 들일 수
   없으므로 모바일이나 간편인증을 전제로 합니다.
 - 카탈로그에 없는 서비스는 실행 대상이 아닙니다. 제보는 식탁보 카탈로그로 하면 됩니다.
@@ -107,6 +108,8 @@ dnx(NuGet)와 npx(npm) 두 채널을 같은 버전으로 함께 게시합니다.
 - `nuget` 잡은 `dotnet pack` 후 `TableCloth.Mcp`를 nuget.org에 올립니다.
 - `aot` 잡은 매트릭스(win, osx, linux)에서 NativeAOT 바이너리를 빌드합니다.
 - `npm` 잡은 `scripts/assemble-npm.mjs`로 런처와 5개 플랫폼 패키지를 조립해 npmjs.org에 올립니다.
+- `github-release` 잡은 태그 푸시일 때 GitHub Release를 만들고, 5개 플랫폼 네이티브 바이너리와 nupkg를
+  첨부하며 릴리스 노트를 자동으로 생성합니다. 패키지 매니저를 거치지 않고 바이너리를 직접 받고 싶을 때 씁니다.
 
 두 채널 모두 OIDC Trusted Publishing으로 게시하므로 장기 API 키나 토큰을 저장하지 않습니다. 게시 잡은
 `environment: production`과 `id-token: write`로 실행되며, 각 레지스트리에 신뢰 게시 정책이 설정되어
