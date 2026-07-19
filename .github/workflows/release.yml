@@ -144,9 +144,67 @@ jobs:
           done
           npm publish "dist/npm/tablecloth-mcp/" --access public
 
-  # ---- GitHub Release (태그 푸시에만): 네이티브 바이너리 + nupkg 첨부 + 릴리스 노트 자동 생성 ----
+  # ---- Claude Desktop Extension (.mcpb) 번들 ----
+  # 자기완결 바이너리 번들. Windows 는 win-x64 exe(arm64 는 x64 에뮬레이션), macOS 는 osx-arm64.
+  # command 가 확장자 없는 server/tablecloth-mcp 이고 Windows 에서는 앱이 자동으로 .exe 를 붙인다.
+  mcpb:
+    needs: [meta, aot]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download native binaries
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: aot-*
+      - name: Assemble bundle dir
+        shell: bash
+        run: |
+          set -e
+          VER="${{ needs.meta.outputs.version }}"
+          mkdir -p mcpb-build/server
+          # 고유 파일명 사용: command 가 확장자 없는 이름이면 패킹 OS 의 .exe 해석과 충돌해 한쪽이 누락된다.
+          cp artifacts/aot-win-x64/tablecloth-mcp.exe mcpb-build/server/tablecloth-mcp-win.exe
+          cp artifacts/aot-osx-arm64/tablecloth-mcp   mcpb-build/server/tablecloth-mcp-macos
+          chmod +x mcpb-build/server/tablecloth-mcp-macos
+          jq --arg v "$VER" '.version=$v' mcpb/manifest.json > mcpb-build/manifest.json
+          cp LICENSE-AGPL LICENSE-COMMERCIAL mcpb-build/ 2>/dev/null || true
+      - name: Pack .mcpb
+        run: |
+          npm install -g @anthropic-ai/mcpb
+          mcpb pack mcpb-build tablecloth-mcp.mcpb
+      - name: Upload .mcpb
+        uses: actions/upload-artifact@v4
+        with:
+          name: mcpb
+          path: tablecloth-mcp.mcpb
+          if-no-files-found: error
+
+  # ---- 공식 MCP Registry 메타데이터 게시 (GitHub OIDC, 시크릿 불필요) ----
+  # npm 게시가 먼저 끝나야 레지스트리가 패키지+mcpName 검증을 통과한다.
+  registry:
+    needs: [meta, npm]
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write   # OIDC 로 registry 인증(io.github.<owner>/ 네임스페이스 소유 증명)
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Sync server.json version
+        run: |
+          VER="${{ needs.meta.outputs.version }}"
+          jq --arg v "$VER" '.version=$v | .packages[0].version=$v' server.json > server.tmp && mv server.tmp server.json
+      - name: Install mcp-publisher
+        run: curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
+      - name: Authenticate to MCP Registry (GitHub OIDC)
+        run: ./mcp-publisher login github-oidc
+      - name: Publish to MCP Registry
+        run: ./mcp-publisher publish
+
+  # ---- GitHub Release (태그 푸시에만): 네이티브 바이너리 + nupkg + .mcpb 첨부 + 릴리스 노트 ----
   github-release:
-    needs: [meta, nuget, aot, npm]
+    needs: [meta, nuget, aot, npm, mcpb]
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
@@ -171,8 +229,9 @@ jobs:
               *)     cp "$src" "release-assets/tablecloth-mcp-$rid" ;;
             esac
           done
-          # .NET tool nupkg 도 함께 첨부.
+          # .NET tool nupkg + Claude Desktop 확장(.mcpb) 도 함께 첨부.
           cp artifacts/nupkg/*.nupkg release-assets/ 2>/dev/null || true
+          cp artifacts/mcpb/*.mcpb release-assets/ 2>/dev/null || true
           ls -la release-assets
       - name: Create or update GitHub Release
         env:

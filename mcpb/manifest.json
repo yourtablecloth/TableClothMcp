@@ -1,0 +1,44 @@
+{
+  "manifest_version": "0.3",
+  "name": "tablecloth-mcp",
+  "display_name": "TableCloth",
+  "version": "0.0.0",
+  "description": "한국 공공(e-Gov)/금융 사이트를 보안프로그램이 갖춰진 일회용 샌드박스에서 안전하게 엽니다.",
+  "long_description": "한국의 은행/공공(e-Gov) 사이트를 실제로 이용하려 할 때, 보안프로그램(공동인증서 등) 설치의 번거로움 없이 깨끗한 일회용 Windows Sandbox(또는 macSandbox)로 해당 공식 사이트를 열어 줍니다. 발견과 안전 실행까지만 하며, 로그인/인증/실제 업무는 사용자가 직접 진행합니다.",
+  "author": {
+    "name": "TableCloth Project",
+    "url": "https://yourtablecloth.app"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourtablecloth/TableClothMcp"
+  },
+  "homepage": "https://yourtablecloth.app",
+  "license": "AGPL-3.0-or-later",
+  "keywords": ["mcp", "tablecloth", "korea", "windows-sandbox", "egov"],
+  "server": {
+    "type": "binary",
+    "entry_point": "server/tablecloth-mcp-macos",
+    "mcp_config": {
+      "command": "${__dirname}/server/tablecloth-mcp-macos",
+      "args": [],
+      "platform_overrides": {
+        "win32": {
+          "command": "${__dirname}/server/tablecloth-mcp-win.exe"
+        }
+      }
+    }
+  },
+  "compatibility": {
+    "claude_desktop": ">=0.10.0",
+    "platforms": ["win32", "darwin"]
+  },
+  "tools": [
+    { "name": "search_services", "description": "한국 은행/금융/공공 사이트를 찾아 service id 를 얻습니다." },
+    { "name": "get_service", "description": "특정 서비스의 상세(필요 보안패키지 등)를 반환합니다." },
+    { "name": "list_categories", "description": "카테고리별 개수를 반환합니다." },
+    { "name": "list_companions", "description": "보조 프로그램 목록을 반환합니다." },
+    { "name": "generate_wsb", "description": "실행용 .wsb 텍스트를 생성합니다." },
+    { "name": "launch_sandbox", "description": "선택한 사이트를 보안프로그램이 갖춰진 일회용 샌드박스로 엽니다." }
+  ]
+}

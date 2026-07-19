@@ -3,6 +3,14 @@
 이 프로젝트의 버전별 주요 변경 사항을 정리합니다. GitHub Release 노트는 릴리스 시 해당 버전
 섹션의 내용으로 자동 생성됩니다. 새 버전을 낼 때는 아래에 `## [X.Y.Z] - YYYY-MM-DD` 섹션을 추가하세요.
 
+## [0.1.5] - 2026-07-19
+
+### Added
+- Claude Desktop 확장(.mcpb) 번들을 릴리스 때 자동으로 만들어 GitHub Release에 첨부합니다. Node나 .NET
+  없이 원클릭으로 설치되는 자기완결 네이티브 바이너리 번들입니다(Windows, macOS Apple Silicon).
+- 공식 MCP Registry에 서버 메타데이터(server.json)를 게시하는 잡을 추가했습니다(GitHub OIDC 인증,
+  시크릿 불필요). npm 패키지에 mcpName을 넣어 레지스트리 검증을 통과하게 했습니다.
+
 ## [0.1.4] - 2026-07-19
 
 ### Changed

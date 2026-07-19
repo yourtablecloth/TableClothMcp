@@ -1,6 +1,7 @@
 {
   "name": "tablecloth-mcp",
   "version": "0.0.0",
+  "mcpName": "io.github.yourtablecloth/tablecloth-mcp",
   "description": "MCP server: find Korean e-Gov/finance sites and open them in a clean, disposable Windows Sandbox with the required security software. Discovery + safe-launch only (no RPA).",
   "license": "AGPL-3.0-or-later",
   "bin": {

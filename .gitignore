@@ -7,5 +7,10 @@
 node_modules/
 dist/
 artifacts/
+# mcpb / registry assembly
+mcpb-build/
+mcpbtest/
+*.mcpb
+server.tmp
 # dev
 smoke.out
