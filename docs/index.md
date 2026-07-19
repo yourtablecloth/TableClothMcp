@@ -95,6 +95,7 @@ GitHub Release 자산을 읽는 용도로만 나갑니다. 자세한 내용은
 ## 링크
 
 - [GitHub 저장소](https://github.com/yourtablecloth/TableClothMcp)
+- [문제 해결 (Troubleshooting)](https://github.com/yourtablecloth/TableClothMcp/blob/main/TROUBLESHOOTING.md)
 - [릴리스](https://github.com/yourtablecloth/TableClothMcp/releases)
 - [npm 패키지](https://www.npmjs.com/package/tablecloth-mcp)
 - [NuGet 패키지](https://www.nuget.org/packages/TableCloth.Mcp)
