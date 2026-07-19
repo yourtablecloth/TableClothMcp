@@ -32,19 +32,21 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>tablecloth-mcp</ToolCommandName>
     <PackageId>TableCloth.Mcp</PackageId>
-    <Version>0.1.6</Version>
+    <Version>0.1.7</Version>
     <Authors>TableCloth Project</Authors>
     <Copyright>Copyright (c) Jung Hyun, Nam (rkttu)</Copyright>
     <Description>MCP server that finds Korean e-Gov/finance sites and opens them in a clean, disposable Windows Sandbox with the required security software. Discovery + safe-launch only (no RPA). Dual-licensed: AGPL-3.0-or-later, or a commercial license (see LICENSE-COMMERCIAL).</Description>
     <PackageTags>mcp;model-context-protocol;tablecloth;korea;windows-sandbox;egov</PackageTags>
     <PackageProjectUrl>https://yourtablecloth.app</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>icon.png</PackageIcon>
     <!-- OSS 옵션은 SPDX 로 선언(AGPL). 커머셜은 SPDX 로 표현 불가라 파일/설명으로 병기. -->
     <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
   </PropertyGroup>
 
   <ItemGroup>
     <None Include="README.md" Pack="true" PackagePath="\" />
+    <None Include="mcpb/icon.png" Pack="true" PackagePath="\" Visible="false" />
     <None Include="LICENSE-AGPL" Pack="true" PackagePath="\" />
     <None Include="LICENSE-COMMERCIAL" Pack="true" PackagePath="\" />
   </ItemGroup>

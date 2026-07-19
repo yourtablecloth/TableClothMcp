@@ -168,6 +168,7 @@ jobs:
           cp artifacts/aot-osx-arm64/tablecloth-mcp   mcpb-build/server/tablecloth-mcp-macos
           chmod +x mcpb-build/server/tablecloth-mcp-macos
           jq --arg v "$VER" '.version=$v' mcpb/manifest.json > mcpb-build/manifest.json
+          cp mcpb/icon.png mcpb-build/icon.png
           cp LICENSE-AGPL LICENSE-COMMERCIAL mcpb-build/ 2>/dev/null || true
       - name: Pack .mcpb
         run: |
