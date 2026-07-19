@@ -32,7 +32,7 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>tablecloth-mcp</ToolCommandName>
     <PackageId>TableCloth.Mcp</PackageId>
-    <Version>0.1.8</Version>
+    <Version>0.2.0</Version>
     <Authors>TableCloth Project</Authors>
     <Copyright>Copyright (c) Jung Hyun, Nam (rkttu)</Copyright>
     <Description>MCP server that finds Korean e-Gov/finance sites and opens them in a clean, disposable Windows Sandbox with the required security software. Discovery + safe-launch only (no RPA). Dual-licensed: AGPL-3.0-or-later, or a commercial license (see LICENSE-COMMERCIAL).</Description>
@@ -43,6 +43,12 @@
     <!-- OSS 옵션은 SPDX 로 선언(AGPL). 커머셜은 SPDX 로 표현 불가라 파일/설명으로 병기. -->
     <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
   </PropertyGroup>
+
+  <!-- shared/ 는 .NET/Node 구현이 공유하는 단일 진실 원천(SPEC.md). 어셈블리에 임베드해 런타임 로드. -->
+  <ItemGroup>
+    <EmbeddedResource Include="shared/strings.json" LogicalName="strings.json" />
+    <EmbeddedResource Include="shared/wsb-template.xml" LogicalName="wsb-template.xml" />
+  </ItemGroup>
 
   <ItemGroup>
     <None Include="README.md" Pack="true" PackagePath="\" />

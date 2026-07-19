@@ -67,7 +67,7 @@ public sealed class CatalogTools
             TotalServices = doc.Services.Count,
             Matched = results.Count,
             Results = results,
-            Note = "id 를 launch_sandbox(serviceIds)에 넣어 실행하세요. 로그인/인증/실제 업무는 사용자가 직접 진행합니다.",
+            Note = SharedResources.SearchResultNote,
         };
     }
 
@@ -81,7 +81,7 @@ public sealed class CatalogTools
         var doc = await catalog.GetAsync(ct: ct).ConfigureAwait(false);
         var s = doc.Services.FirstOrDefault(x => string.Equals(x.Id, id, StringComparison.Ordinal));
         if (s is null)
-            return new ServiceResponse { Error = $"service id '{id}' 를 카탈로그에서 찾지 못했습니다.", Hint = "search_services 로 정확한 id 를 확인하세요. (대소문자 구분)" };
+            return new ServiceResponse { Error = SharedResources.GetServiceErrorNotFound.Replace("{id}", id), Hint = SharedResources.GetServiceHintNotFound };
 
         return new ServiceResponse
         {

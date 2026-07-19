@@ -1,0 +1,67 @@
+{
+  "_comment": "TableCloth MCP 의 모든 프롬프트/문자열에 대한 단일 진실 원천(single source of truth). .NET 구현과 Node 구현이 동일하게 소비한다. 문자열은 여기서만 수정한다. 자세한 계약은 SPEC.md 참조.",
+  "server": {
+    "instructions": "TableCloth 는 한국 공공(e-Gov)과 금융 서비스를 보안프로그램이 갖춰진 안전한 일회용 샌드박스에서 열어 준다. 사용자가 대화 중 특정 한국 공공/금융 서비스나 정책을 실제로 신청, 가입, 접속, 이용하려는 의도를 보이면 (예: '신청할래', '가입할래', '이거 해야겠다', '접속해서 처리할래'), 사용자가 '샌드박스'라는 말을 하지 않아도 search_services 로 해당 서비스를 찾아 launch_sandbox 로 연다. 단순 정보나 뉴스 검색은 일반 웹 검색 도구를 쓰고, 이 서버의 도구는 실제 이용/신청 행동에 쓴다. 로그인, 인증, 실제 업무는 사용자가 직접 진행한다(RPA 아님)."
+  },
+  "tools": {
+    "search_services": {
+      "title": "한국 공공/금융 사이트 검색",
+      "description": "한국의 은행, 금융, 공공(e-Gov), 정부 사이트를 사용자가 실제로 이용하려 할 때 알맞은 공식 사이트(카탈로그 서비스)를 찾아 그 service id 를 돌려준다. 이 id 를 launch_sandbox 에 넣으면 보안프로그램(공동인증서, 백신, 키보드보안 등)이 미리 설치된 일회용 샌드박스에서 그 사이트가 열린다.\n\n이럴 때 사용하라(사용자가 '샌드박스'라고 말하지 않아도): 은행 계좌 개설이나 인터넷뱅킹 로그인/이용, 홈택스 연말정산, 정부24 민원, 각종 온라인 신청/가입처럼 한국 사이트를 '실제로 이용/신청'하려는 의도. '만들래', '가입할래', '신청할래', 'PC로 하려면', '접속해서 처리할래' 같은 발화가 신호다. 특히 네가 사용자에게 '이 사이트는 보안 프로그램 설치가 필요하다'거나 은행/공공 사이트 이용 절차를 설명하려는 순간이면, 절차를 텍스트로 설명하기 전에 먼저 이 도구로 그 사이트를 찾아 launch_sandbox 로 여는 것을 우선 고려하라.\n\n이럴 땐 사용하지 마라: 상품 비교, 금리 조회, 제도 정보, 뉴스처럼 단순히 알아보는 질문은 일반 웹 검색을 쓴다.\n\n표시명(한국어와 영어), URL, 보안패키지명, 검색 키워드로 매칭한다. 예: '국민은행', 'KB', '홈택스', '연말정산', 'hometax'.",
+      "params": {
+        "query": "검색어. 공백/쉼표로 여러 토큰 가능(OR 매칭).",
+        "category": "카테고리로 추가 필터(선택). 예: Banking, Financing, CreditCard, Government, Other.",
+        "limit": "최대 반환 개수(기본 15)."
+      },
+      "resultNote": "id 를 launch_sandbox(serviceIds)에 넣어 실행하세요. 로그인/인증/실제 업무는 사용자가 직접 진행합니다."
+    },
+    "get_service": {
+      "title": "서비스 상세 조회",
+      "description": "특정 service id 의 상세 정보(필요 보안 패키지 전체, Edge 확장, 호환성 주의사항, 아이콘 URL)를 반환한다.",
+      "params": {
+        "id": "카탈로그 service id (search_services 결과의 id)."
+      },
+      "errorNotFound": "service id '{id}' 를 카탈로그에서 찾지 못했습니다.",
+      "hintNotFound": "search_services 로 정확한 id 를 확인하세요. (대소문자 구분)"
+    },
+    "list_categories": {
+      "title": "카테고리 목록",
+      "description": "카탈로그의 서비스 카테고리 목록과 각 개수를 반환한다. 탐색 범위를 좁힐 때 사용."
+    },
+    "list_companions": {
+      "title": "보조 프로그램 목록",
+      "description": "보조 프로그램(공용 소프트웨어: PDF 뷰어, 프린터 유틸 등) 목록을 반환한다(선택적 키워드 필터). 이들은 사이트별 필수 보안프로그램과 달리 공식 다운로드 페이지 안내용이다.",
+      "params": {
+        "query": "이름/URL 부분 일치 필터(선택)."
+      }
+    },
+    "generate_wsb": {
+      "title": "샌드박스 설정(.wsb) 생성",
+      "description": "선택한 service id 들로 실행할 Windows Sandbox 설정(.wsb) XML 텍스트를 생성해 반환한다(파일 실행은 안 함). 모든 OS 에서 호출 가능 — 사용자에게 .wsb 를 건네 더블클릭하게 할 때 쓴다. 생성된 .wsb 는 GitHub 릴리스의 공개 자산만 받아 동작하며, 지정한 사이트들의 보안프로그램을 샌드박스 안에서 자동 설치한 뒤 사이트를 연다. 로그인/인증/업무는 사용자 몫.",
+      "params": {
+        "serviceIds": "샌드박스에서 열 카탈로그 service id 목록(1개 이상). search_services 로 확인."
+      },
+      "usage": "이 XML 을 .wsb 파일로 저장해 실행하면 지정한 사이트들이 보안프로그램과 함께 준비됩니다. 러너: Windows → Windows Sandbox(Windows 11 기능, 더블클릭), macOS(Apple Silicon) → macSandbox(`MacSandbox <file>.wsb`).",
+      "errorNoValidIds": "유효한 service id 가 없습니다.",
+      "hintNoValidIds": "search_services 로 정확한 id(대소문자 구분)를 확인하세요."
+    },
+    "launch_sandbox": {
+      "title": "샌드박스로 사이트 열기",
+      "description": "search_services 로 얻은 service id 들로, 그 한국 은행/공공 사이트를 보안프로그램이 갖춰진 일회용 샌드박스에서 즉시 연다. 사용자가 은행 계좌 개설/가입/로그인, 인터넷뱅킹, 홈택스, 정부24 등 보안프로그램이 필요한 사이트를 실제로 이용하거나 신청하려 할 때 사용한다.\n\n핵심 동작: 이용 절차나 로그인 방법, '보안 프로그램 설치가 필요하다'는 안내를 텍스트로 길게 설명하는 대신, 이 도구로 그 공식 사이트를 바로 열어 사용자가 보안프로그램 설치 번거로움 없이 진행하게 한다. 사용자가 'PC로 만들래', '신청할래', '가입할래'처럼 말하거나, 네가 '보안 프로그램 설치가 필요하다'고 안내하려는 순간이 바로 이 도구를 쓸 때다('샌드박스'라는 말이 없어도).\n\n러너: Windows 는 Windows Sandbox, macOS(Apple Silicon)는 macSandbox, 그 외(Linux 등)는 환경변수 TABLECLOTH_WSB_RUNNER 에 지정한 러너(모든 OS 에서 기본값보다 우선, .wsb 경로를 첫 인자로 받음). 샌드박스가 뜨면 보안프로그램이 자동 설치되고 사이트가 열린다. 러너가 없으면 generate_wsb 로 .wsb 를 받아 실행한다. 로그인, 인증(공동/금융/간편인증), 실제 신청은 사용자가 직접 한다(RPA 아님).",
+      "params": {
+        "serviceIds": "열 카탈로그 service id 목록(1개 이상). 여러 개면 한 샌드박스에 병합 설치된다."
+      },
+      "noteTemplate": "{runner} 준비(보안프로그램 설치)에 수 분 걸릴 수 있습니다. 인증/로그인은 사용자가 직접 진행하세요.",
+      "errorNoValidIds": "유효한 service id 가 없습니다.",
+      "hintNoValidIds": "search_services 로 확인하세요.",
+      "runnerMacNotFoundError": "macSandbox(MacSandbox) 를 찾지 못했습니다.",
+      "runnerMacNotFoundHint": "macSandbox 를 설치(Applications) 하거나, TABLECLOTH_WSB_RUNNER 로 러너를 지정하거나, generate_wsb 로 .wsb 를 받아 실행하세요. macSandbox 는 Apple Silicon + macOS 26(Tahoe) 이 필요합니다. https://github.com/yourtablecloth/macSandbox",
+      "runnerUnsupportedError": "이 OS(예: Linux)에는 기본 제공되는 .wsb 러너가 없습니다.",
+      "runnerUnsupportedHint": "TABLECLOTH_WSB_RUNNER 환경변수에 .wsb 를 첫 인자로 받는 러너 명령(예: QEMU 기반 스크립트)을 지정하면 자동 실행됩니다. 지정이 없으면 generate_wsb 로 .wsb 를 받아 실행하세요.",
+      "runnerLaunchFailedError": "{runner} 실행 실패: {message}",
+      "runnerLaunchFailedHint": "러너(Windows Sandbox 기능 / macSandbox 앱 / TABLECLOTH_WSB_RUNNER 명령)가 설치·활성화돼 있고 실행 가능한지 확인하세요."
+    }
+  },
+  "sandbox": {
+    "securityNote": "이 .wsb 는 공식 TableCloth 준비 스크립트(GitHub 릴리스, HTTPS)를 일회용 샌드박스 안에서만 실행합니다. 호스트 시스템에는 접근하거나 영향을 주지 않고, 샌드박스를 닫으면 모두 사라집니다. ExecutionPolicy Bypass 와 원격 스크립트 실행은 이 격리된 일회용 환경 내부에서만 일어납니다. 자격증명/로그인/이체는 수행하지 않으며 사용자가 직접 진행합니다."
+  }
+}

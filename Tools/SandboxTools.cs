@@ -20,14 +20,8 @@ public sealed partial class SandboxTools
     [GeneratedRegex(@"^[A-Za-z0-9._-]+$")]
     private static partial Regex SafeIdRegex();
 
-    // 생성/실행되는 .wsb 의 명령은 원격 스크립트 다운로드 실행 형태라 악성 다운로더와 겉모습이 비슷하다.
-    // 실제 동작(공식 HTTPS 스크립트를 일회용 샌드박스 안에서만 실행, 호스트 무영향)을 응답에 명시해
-    // 리뷰하는 모델의 불필요한 오탐/경고와 사용자 불안을 줄인다. 자세한 개선 계획은 TROUBLESHOOTING.md 참조.
-    internal const string SandboxSecurityNote =
-        "이 .wsb 는 공식 TableCloth 준비 스크립트(GitHub 릴리스, HTTPS)를 일회용 샌드박스 안에서만 실행합니다. " +
-        "호스트 시스템에는 접근하거나 영향을 주지 않고, 샌드박스를 닫으면 모두 사라집니다. " +
-        "ExecutionPolicy Bypass 와 원격 스크립트 실행은 이 격리된 일회용 환경 내부에서만 일어납니다. " +
-        "자격증명/로그인/이체는 수행하지 않으며 사용자가 직접 진행합니다.";
+    // 사용자 노출 문구(securityNote, usage, note, hint, .wsb 템플릿)는 shared/strings.json + shared/wsb-template.xml
+    // 이 정본이며 SharedResources 가 임베드 리소스에서 로드한다(구현 간 동일). 여기 하드코딩하지 않는다.
 
     [McpServerTool(Name = "generate_wsb", Title = "샌드박스 설정(.wsb) 생성", ReadOnly = true, OpenWorld = true)]
     [Description(
@@ -45,9 +39,9 @@ public sealed partial class SandboxTools
         {
             return new WsbResponse
             {
-                Error = "유효한 service id 가 없습니다.",
+                Error = SharedResources.GenerateWsbErrorNoValidIds,
                 UnknownIds = unknown,
-                Hint = "search_services 로 정확한 id(대소문자 구분)를 확인하세요.",
+                Hint = SharedResources.GenerateWsbHintNoValidIds,
             };
         }
 
@@ -56,9 +50,8 @@ public sealed partial class SandboxTools
             SiteIds = valid,
             UnknownIdsIgnored = unknown.Count > 0 ? unknown : null,
             Wsb = BuildWsb(valid),
-            Usage = "이 XML 을 .wsb 파일로 저장해 실행하면 지정한 사이트들이 보안프로그램과 함께 준비됩니다. " +
-                    "러너: Windows → Windows Sandbox(Windows 11 기능, 더블클릭), macOS(Apple Silicon) → macSandbox(`MacSandbox <file>.wsb`).",
-            SecurityNote = SandboxSecurityNote,
+            Usage = SharedResources.GenerateWsbUsage,
+            SecurityNote = SharedResources.SecurityNote,
         };
     }
 
@@ -82,7 +75,7 @@ public sealed partial class SandboxTools
     {
         var (valid, unknown) = await ResolveIdsAsync(catalog, serviceIds, ct).ConfigureAwait(false);
         if (valid.Count == 0)
-            return new LaunchResponse { Launched = false, Error = "유효한 service id 가 없습니다.", UnknownIds = unknown, Hint = "search_services 로 확인하세요." };
+            return new LaunchResponse { Launched = false, Error = SharedResources.LaunchErrorNoValidIds, UnknownIds = unknown, Hint = SharedResources.LaunchHintNoValidIds };
 
         // 러너 선택 순서: (1) TABLECLOTH_WSB_RUNNER 환경변수 오버라이드(모든 OS. Linux 처럼 기본 러너가
         // 없는 환경이나 사용자 지정 러너용), (2) OS 기본값. 같은 .wsb 를 Windows Sandbox / macSandbox /
@@ -114,10 +107,8 @@ public sealed partial class SandboxTools
                 return new LaunchResponse
                 {
                     Launched = false,
-                    Error = "macSandbox(MacSandbox) 를 찾지 못했습니다.",
-                    Hint = "macSandbox 를 설치(Applications) 하거나, TABLECLOTH_WSB_RUNNER 로 러너를 지정하거나, " +
-                           "generate_wsb 로 .wsb 를 받아 실행하세요. macSandbox 는 Apple Silicon + macOS 26(Tahoe) 이 " +
-                           "필요합니다. https://github.com/yourtablecloth/macSandbox",
+                    Error = SharedResources.RunnerMacNotFoundError,
+                    Hint = SharedResources.RunnerMacNotFoundHint,
                 };
             }
             runner = "macSandbox";
@@ -129,9 +120,8 @@ public sealed partial class SandboxTools
             return new LaunchResponse
             {
                 Launched = false,
-                Error = "이 OS(예: Linux)에는 기본 제공되는 .wsb 러너가 없습니다.",
-                Hint = "TABLECLOTH_WSB_RUNNER 환경변수에 .wsb 를 첫 인자로 받는 러너 명령(예: QEMU 기반 스크립트)을 " +
-                       "지정하면 자동 실행됩니다. 지정이 없으면 generate_wsb 로 .wsb 를 받아 실행하세요.",
+                Error = SharedResources.RunnerUnsupportedError,
+                Hint = SharedResources.RunnerUnsupportedHint,
             };
         }
 
@@ -154,8 +144,8 @@ public sealed partial class SandboxTools
                 SiteIds = valid,
                 UnknownIdsIgnored = unknown.Count > 0 ? unknown : null,
                 WsbPath = path,
-                Note = $"{runner} 준비(보안프로그램 설치)에 수 분 걸릴 수 있습니다. 인증/로그인은 사용자가 직접 진행하세요.",
-                SecurityNote = SandboxSecurityNote,
+                Note = SharedResources.LaunchNoteTemplate.Replace("{runner}", runner),
+                SecurityNote = SharedResources.SecurityNote,
             };
         }
         catch (Exception ex)
@@ -164,8 +154,8 @@ public sealed partial class SandboxTools
             {
                 Launched = false,
                 Runner = runner,
-                Error = $"{runner} 실행 실패: {ex.Message}",
-                Hint = "러너(Windows Sandbox 기능 / macSandbox 앱 / TABLECLOTH_WSB_RUNNER 명령)가 설치·활성화돼 있고 실행 가능한지 확인하세요.",
+                Error = SharedResources.RunnerLaunchFailedError.Replace("{runner}", runner).Replace("{message}", ex.Message),
+                Hint = SharedResources.RunnerLaunchFailedHint,
                 WsbPath = path,
             };
         }
@@ -216,31 +206,16 @@ public sealed partial class SandboxTools
         return (valid, unknown);
     }
 
-    // 무설치 Express .wsb 템플릿(PARAMETERIZED_WSB_SPEC.md §0.5 "간소화된 기본형").
-    // 유일한 주입점은 TABLECLOTH_SITE_IDS(사이트 사전선택). 나머지는 전부 릴리스 고정 URL.
-    //
-    // 비보간(non-interpolated) raw string 을 쓰고 __SITEIDS__ 만 치환한다 → PowerShell 중괄호를
-    // 이스케이프할 필요가 없다. LogonCommand 원문은 릴리스 자산 no-install-spork.wsb 와 동일.
-    private const string WsbTemplate =
-        """
-        <?xml version="1.0" encoding="utf-8"?>
-        <Configuration>
-          <Networking>Enable</Networking>
-          <vGPU>Disable</vGPU>
-          <LogonCommand>
-            <Command>powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "Start-Process powershell.exe -WindowStyle Normal -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-Command','$Host.UI.RawUI.WindowTitle = ''TableCloth Setup''; Write-Host '' Getting TableCloth ready...'' -ForegroundColor Cyan; if (-not (Resolve-DnsName -Name github.com -QuickTimeout -ErrorAction SilentlyContinue)) { Get-NetAdapter | Where-Object Status -eq ''Up'' | Set-DnsClientServerAddress -ServerAddresses 8.8.8.8,1.1.1.1 }; [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor 3072;__SITEIDS__ try { iex ((New-Object Net.WebClient).DownloadString(''https://github.com/yourtablecloth/TableCloth/releases/latest/download/tablecloth-prepare.ps1'')) } catch { Write-Host ('' Failed: '' + $_.Exception.Message) -ForegroundColor Red; $null = Read-Host '' Press Enter to close'' }'"</Command>
-          </LogonCommand>
-        </Configuration>
-        """;
-
     private static string BuildWsb(IReadOnlyList<string> validIds)
     {
+        // 템플릿(LogonCommand 원문)은 shared/wsb-template.xml 이 정본이며 본 리포의 no-install-spork.wsb 와 동일.
+        // 유일한 주입점은 TABLECLOTH_SITE_IDS(사이트 사전선택). __SITEIDS__ 만 치환한다.
         // valid 는 이미 SafeIdRegex 통과 → 공백 join 안전(작은따옴표/XML 특수문자 없음).
         // .wsb 안에서는 PowerShell 작은따옴표 문자열이라 리터럴 ' 는 '' 로 이스케이프된다.
         var idsStmt = validIds.Count == 0
             ? string.Empty
             : " $env:TABLECLOTH_SITE_IDS = ''" + string.Join(' ', validIds) + "'';";
 
-        return WsbTemplate.Replace("__SITEIDS__", idsStmt);
+        return SharedResources.WsbTemplate.Replace("__SITEIDS__", idsStmt);
     }
 }
