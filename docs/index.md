@@ -49,7 +49,7 @@
 `tablecloth-mcp.mcpb`를 받아 Claude Desktop 창에 끌어다 놓거나,
 Settings > Extensions > Advanced settings > Install Extension 에서 선택합니다.
 Claude Desktop 이 번들한 Node 로 실행되는 순수 JS 번들이라 별도 런타임 설치가 필요 없습니다(Windows, macOS).
-macOS 에서 `launch_sandbox` 는 Apple Silicon 과 최신 macOS 의 macSandbox 가 필요합니다.
+macOS 에서 `launch_sandbox` 는 Apple Silicon 과 최신 macOS 의 [macSandbox](https://yourtablecloth.app/macSandbox/) 가 필요합니다.
 
 ### npx (Node)
 
@@ -100,4 +100,5 @@ GitHub Release 자산을 읽는 용도로만 나갑니다. 자세한 내용은
 - [릴리스](https://github.com/yourtablecloth/TableClothMcp/releases)
 - [npm 패키지](https://www.npmjs.com/package/tablecloth-mcp)
 - [NuGet 패키지](https://www.nuget.org/packages/TableCloth.Mcp)
+- [macSandbox (macOS 러너)](https://yourtablecloth.app/macSandbox/)
 - [TableCloth 본 프로젝트](https://yourtablecloth.app)
