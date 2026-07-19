@@ -6,7 +6,8 @@ theme: jekyll-theme-cayman
 lang: ko-KR
 
 # 프로젝트 페이지(하위 경로)에서 테마 자산과 링크가 올바르게 풀리도록 지정한다.
-url: https://yourtablecloth.github.io
+# 조직의 커스텀 도메인(yourtablecloth.app)이 프로젝트 페이지에도 적용되어 이 경로로 서빙된다.
+url: https://yourtablecloth.app
 baseurl: /TableClothMcp
 
 # 소스 zip/tar 다운로드 버튼은 숨긴다(배포는 GitHub Releases/npm/NuGet 으로 안내).
