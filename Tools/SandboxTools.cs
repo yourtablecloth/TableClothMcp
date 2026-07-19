@@ -20,6 +20,15 @@ public sealed partial class SandboxTools
     [GeneratedRegex(@"^[A-Za-z0-9._-]+$")]
     private static partial Regex SafeIdRegex();
 
+    // 생성/실행되는 .wsb 의 명령은 원격 스크립트 다운로드 실행 형태라 악성 다운로더와 겉모습이 비슷하다.
+    // 실제 동작(공식 HTTPS 스크립트를 일회용 샌드박스 안에서만 실행, 호스트 무영향)을 응답에 명시해
+    // 리뷰하는 모델의 불필요한 오탐/경고와 사용자 불안을 줄인다. 자세한 개선 계획은 TROUBLESHOOTING.md 참조.
+    internal const string SandboxSecurityNote =
+        "이 .wsb 는 공식 TableCloth 준비 스크립트(GitHub 릴리스, HTTPS)를 일회용 샌드박스 안에서만 실행합니다. " +
+        "호스트 시스템에는 접근하거나 영향을 주지 않고, 샌드박스를 닫으면 모두 사라집니다. " +
+        "ExecutionPolicy Bypass 와 원격 스크립트 실행은 이 격리된 일회용 환경 내부에서만 일어납니다. " +
+        "자격증명/로그인/이체는 수행하지 않으며 사용자가 직접 진행합니다.";
+
     [McpServerTool(Name = "generate_wsb", Title = "샌드박스 설정(.wsb) 생성", ReadOnly = true, OpenWorld = true)]
     [Description(
         "선택한 service id 들로 실행할 Windows Sandbox 설정(.wsb) XML 텍스트를 생성해 반환한다(파일 실행은 안 함). " +
@@ -49,6 +58,7 @@ public sealed partial class SandboxTools
             Wsb = BuildWsb(valid),
             Usage = "이 XML 을 .wsb 파일로 저장해 실행하면 지정한 사이트들이 보안프로그램과 함께 준비됩니다. " +
                     "러너: Windows → Windows Sandbox(Windows 11 기능, 더블클릭), macOS(Apple Silicon) → macSandbox(`MacSandbox <file>.wsb`).",
+            SecurityNote = SandboxSecurityNote,
         };
     }
 
@@ -145,6 +155,7 @@ public sealed partial class SandboxTools
                 UnknownIdsIgnored = unknown.Count > 0 ? unknown : null,
                 WsbPath = path,
                 Note = $"{runner} 준비(보안프로그램 설치)에 수 분 걸릴 수 있습니다. 인증/로그인은 사용자가 직접 진행하세요.",
+                SecurityNote = SandboxSecurityNote,
             };
         }
         catch (Exception ex)

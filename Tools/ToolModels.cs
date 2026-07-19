@@ -72,6 +72,8 @@ public sealed record WsbResponse
     public IReadOnlyList<string>? UnknownIdsIgnored { get; init; }
     public string? Wsb { get; init; }
     public string? Usage { get; init; }
+    // 생성된 .wsb 명령이 악성 다운로더와 형태가 비슷해 오탐되는 것을 줄이려는 의도 설명(동작 투명성).
+    public string? SecurityNote { get; init; }
     public string? Error { get; init; }
     public IReadOnlyList<string>? UnknownIds { get; init; }
     public string? Hint { get; init; }
@@ -85,6 +87,8 @@ public sealed record LaunchResponse
     public IReadOnlyList<string>? UnknownIdsIgnored { get; init; }
     public string? WsbPath { get; init; }
     public string? Note { get; init; }
+    // 실행되는 .wsb 가 격리된 일회용 환경 전용이며 호스트에 영향이 없음을 명시(동작 투명성).
+    public string? SecurityNote { get; init; }
     public string? Error { get; init; }
     public IReadOnlyList<string>? UnknownIds { get; init; }
     public string? Hint { get; init; }
