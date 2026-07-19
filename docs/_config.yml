@@ -1,0 +1,13 @@
+# GitHub Pages 홍보 사이트 설정.
+# 기본 GitHub Pages 테마(Cayman)를 사용한다. 별도 gem/plugin 없이 GitHub Pages가 그대로 빌드한다.
+title: TableCloth MCP
+description: 한국 공공/금융 사이트를 보안프로그램이 갖춰진 일회용 샌드박스에서 안전하게 여는 MCP 서버
+theme: jekyll-theme-cayman
+lang: ko-KR
+
+# 프로젝트 페이지(하위 경로)에서 테마 자산과 링크가 올바르게 풀리도록 지정한다.
+url: https://yourtablecloth.github.io
+baseurl: /TableClothMcp
+
+# 소스 zip/tar 다운로드 버튼은 숨긴다(배포는 GitHub Releases/npm/NuGet 으로 안내).
+show_downloads: false
