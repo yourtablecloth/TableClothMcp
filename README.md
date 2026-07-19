@@ -14,16 +14,17 @@
 
 ## 설치
 
-Claude Desktop이라면 원클릭 확장(.mcpb)이 가장 간편하고, 그 외 클라이언트는 MCP 설정에 npx나 dnx 실행을
+Claude Desktop이라면 확장(.mcpb) 설치가 간편하고, 그 외 클라이언트는 MCP 설정에 npx나 dnx 실행을
 넣으면 됩니다. 모두 동일한 서버입니다.
 
-### Claude Desktop 확장 (.mcpb, 원클릭)
+### Claude Desktop 확장 (.mcpb)
 
 [GitHub Release](https://github.com/yourtablecloth/TableClothMcp/releases/latest)에서
-`tablecloth-mcp.mcpb`를 받아 Claude Desktop에 끌어다 놓거나 더블클릭하면 설치됩니다. Claude Desktop이
-번들한 Node로 실행되는 순수 JS 번들이라 별도 런타임 설치가 필요 없고, 네이티브 바이너리가 없어
-서명/공증이나 확장 재설치 시 잠금 문제도 없습니다(Windows, macOS). MCP 설정을 직접 편집할 필요도
-없습니다. macOS에서의 `launch_sandbox`는 macSandbox가 필요합니다.
+`tablecloth-mcp.mcpb`를 받아 Claude Desktop 창에 끌어다 놓거나 Settings > Extensions 에서 설치합니다.
+Claude Desktop이 번들한 Node로 실행되는 순수 JS 번들이라 별도 런타임 설치가 필요 없고, 네이티브
+바이너리가 없어 서명/공증이나 확장 재설치 시 잠금 문제도 없습니다(Windows, macOS). MCP 설정을 직접
+편집할 필요도 없습니다. macOS에서의 `launch_sandbox`는 Apple Silicon과 최신 macOS의 macSandbox가
+필요합니다.
 
 ### npx로 실행 (Node 사용자, .NET 불필요)
 

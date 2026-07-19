@@ -43,12 +43,13 @@
 
 ## 설치
 
-### Claude Desktop (원클릭)
+### Claude Desktop 확장 (.mcpb)
 
 [GitHub Releases](https://github.com/yourtablecloth/TableClothMcp/releases/latest)에서
 `tablecloth-mcp.mcpb`를 받아 Claude Desktop 창에 끌어다 놓거나,
-Settings > Extensions > Advanced settings > Install Extension 에서 선택하면 됩니다.
-Node 나 .NET 을 따로 설치할 필요가 없는 자기완결 네이티브 번들입니다(Windows, macOS Apple Silicon).
+Settings > Extensions > Advanced settings > Install Extension 에서 선택합니다.
+Claude Desktop 이 번들한 Node 로 실행되는 순수 JS 번들이라 별도 런타임 설치가 필요 없습니다(Windows, macOS).
+macOS 에서 `launch_sandbox` 는 Apple Silicon 과 최신 macOS 의 macSandbox 가 필요합니다.
 
 ### npx (Node)
 
