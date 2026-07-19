@@ -1,11 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!--
-    TableCloth MCP server — standalone.
-    이 프로젝트는 TableCloth git 리포지터리에 코드/빌드 의존이 없다.
-    런타임에 공개 자산만 소비한다:
+    TableCloth MCP server — .NET 구현(dnx / NuGet 도구 레인).
+    이 프로젝트는 TableCloth git 리포지터리에 코드/빌드 의존이 없다. 런타임에 공개 자산만 소비한다:
       - 카탈로그: https://yourtablecloth.app/TableClothCatalog/Catalog.xml
-      - 실행 자산: GitHub Release latest/download 의 tablecloth-prepare.ps1 / SporkBootstrap_<arch>.exe / Spork_<arch>_Portable.zip
+      - 실행 자산: GitHub Release latest/download 의 tablecloth-prepare.ps1 등
+    .mcpb(Claude Desktop) 와 npm 레인은 node/ 의 Node/TS 구현이 담당한다(SPEC.md). 두 구현은
+    shared/ 를 단일 진실 원천으로 소비하고 node/test/conformance.mjs 로 동등성을 검증한다.
   -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -18,21 +19,14 @@
     <ServerGarbageCollection>false</ServerGarbageCollection>
   </PropertyGroup>
 
-  <!-- 레인 B(npx/NativeAOT) 준비: 링커 없이도 빌드 시 AOT/trim/single-file 분석기로 비호환을 잡는다.
-       실제 네이티브 게시는 dotnet publish -r <rid> -p:PublishAot=true 로 수행한다. -->
-  <PropertyGroup>
-    <EnableAotAnalyzer>true</EnableAotAnalyzer>
-    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
-    <EnableSingleFileAnalyzer>true</EnableSingleFileAnalyzer>
-  </PropertyGroup>
-
-  <!-- 배포 레인 A: dnx / .NET tool (NuGet 패키지). 클라이언트에 .NET 10 SDK 필요.
-       실행: dnx TableCloth.Mcp  (또는 dotnet tool install -g TableCloth.Mcp) -->
+  <!-- 배포: dnx / .NET tool (NuGet 패키지). 클라이언트에 .NET 10 SDK 필요.
+       실행: dnx TableCloth.Mcp  (또는 dotnet tool install -g TableCloth.Mcp)
+       dnx 는 사용자 .NET 호스트가 관리형 어셈블리를 실행하므로 NativeAOT 나 exe 자기잠금 이슈가 없다. -->
   <PropertyGroup>
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>tablecloth-mcp</ToolCommandName>
     <PackageId>TableCloth.Mcp</PackageId>
-    <Version>0.2.0</Version>
+    <Version>0.3.0</Version>
     <Authors>TableCloth Project</Authors>
     <Copyright>Copyright (c) Jung Hyun, Nam (rkttu)</Copyright>
     <Description>MCP server that finds Korean e-Gov/finance sites and opens them in a clean, disposable Windows Sandbox with the required security software. Discovery + safe-launch only (no RPA). Dual-licensed: AGPL-3.0-or-later, or a commercial license (see LICENSE-COMMERCIAL).</Description>

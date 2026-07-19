@@ -1,6 +1,6 @@
 {
   "name": "tablecloth-mcp",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "MCP server that finds Korean e-Gov/finance sites and opens them in a clean, disposable Windows Sandbox with the required security software. Discovery + safe-launch only (no RPA). Node/TS implementation (counterpart of the .NET dnx build). Dual-licensed: AGPL-3.0-or-later, or a commercial license.",
   "type": "module",
   "bin": {

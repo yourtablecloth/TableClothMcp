@@ -1,13 +1,11 @@
 name: Release
 
-# 하나의 버전 태그(vX.Y.Z)에서 두 배포 채널을 "같은 선상에서 동일하게" 릴리스한다:
-#   - dnx 레인: .NET tool NuGet 패키지(TableCloth.Mcp) -> nuget.org
-#   - npx 레인: 플랫폼별 NativeAOT 바이너리를 npm 패키지(tablecloth-mcp + 플랫폼 optionalDependency)로 -> npmjs.org
-# 두 채널의 버전은 태그에서 파생된 동일 값으로 스탬프된다.
-#
-# 필요한 저장소 시크릿:
-#   NUGET_API_KEY : nuget.org 푸시 키
-#   NPM_TOKEN     : npmjs.org publish 토큰(Automation)
+# 하나의 버전 태그(vX.Y.Z)에서 레인별로 게시한다(SPEC.md §2):
+#   - NuGet 도구(dnx):  C# .NET tool 패키지(TableCloth.Mcp) -> nuget.org  [OIDC]
+#   - npm(npx):         Node 순수 JS 패키지(tablecloth-mcp) -> npmjs.org  [OIDC, provenance]
+#   - .mcpb:            Node 번들 기반 Claude Desktop 확장 -> GitHub Release 첨부
+#   - MCP Registry:     server.json 메타데이터 게시  [GitHub OIDC]
+# npm 은 더 이상 OS별 네이티브 바이너리를 담지 않는다(순수 JS). 구 플랫폼 패키지는 npm deprecate 로 정리.
 
 on:
   push:
@@ -15,11 +13,10 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to release (e.g. 0.1.0), no leading v'
+        description: 'Version to release (e.g. 0.3.0), no leading v'
         required: true
         type: string
 
-# 기본은 최소 권한. OIDC(id-token) 는 게시 잡에서만 켠다.
 permissions:
   contents: read
 
@@ -43,7 +40,7 @@ jobs:
           echo "version=$V" >> "$GITHUB_OUTPUT"
           echo "Release version: $V"
 
-  # ---- dnx 레인: .NET tool NuGet 패키지 (Trusted Publishing / OIDC) ----
+  # ---- NuGet 도구(dnx): C# .NET tool (Trusted Publishing / OIDC) ----
   nuget:
     needs: meta
     runs-on: ubuntu-latest
@@ -58,16 +55,13 @@ jobs:
           dotnet-version: '10.0.x'
       - name: Pack .NET tool
         run: dotnet pack -c Release -p:Version=${{ needs.meta.outputs.version }} -o out
-      # nuget.org 의 trusted publishing 정책(repo + workflow=release.yml + environment=production)에 바인딩된
-      # OIDC 토큰을 1시간짜리 임시 API 키로 교환한다. 장기 API 키(NUGET_API_KEY) 불필요.
       - name: NuGet trusted publishing login
         uses: NuGet/login@v1
         id: nuget-login
         with:
-          user: ${{ secrets.NUGET_USER }}   # nuget.org 사용자명(이메일 아님)
+          user: ${{ secrets.NUGET_USER }}
       - name: Push to NuGet
         run: dotnet nuget push "out/*.nupkg" --api-key "${{ steps.nuget-login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
-      # GitHub Release 에 첨부하려고 nupkg 를 아티팩트로 넘긴다.
       - name: Upload nupkg artifact
         uses: actions/upload-artifact@v4
         with:
@@ -75,47 +69,13 @@ jobs:
           path: out/*.nupkg
           if-no-files-found: error
 
-  # ---- npx 레인: 플랫폼별 NativeAOT 빌드 (NativeAOT 는 타깃 OS 에서 빌드해야 함) ----
-  aot:
-    needs: meta
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          # windows 러너 이미지는 "Desktop development with C++"(MSVC 링커)를 포함 → NativeAOT 링크 성립.
-          - { rid: win-x64,     runner: windows-latest,   bin: tablecloth-mcp.exe }
-          - { rid: win-arm64,   runner: windows-11-arm,   bin: tablecloth-mcp.exe }
-          # macOS 는 Apple Silicon(arm64)만 — macSandbox 가 Apple Silicon 전용이라 동일하게 arm64만 낸다.
-          - { rid: osx-arm64,   runner: macos-latest,     bin: tablecloth-mcp }
-          # Linux(디스커버리/generate_wsb 용). 자동 실행 러너는 추후(현재 macSandbox 는 macOS 전용).
-          - { rid: linux-x64,   runner: ubuntu-latest,    bin: tablecloth-mcp }
-          - { rid: linux-arm64, runner: ubuntu-24.04-arm, bin: tablecloth-mcp }
-    runs-on: ${{ matrix.runner }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '10.0.x'
-      # Linux NativeAOT 는 clang + zlib 개발 헤더가 필요하다(macOS 는 Xcode CLT, Windows 는 MSVC 로 충족).
-      - name: Install Linux AOT toolchain
-        if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y clang zlib1g-dev
-      - name: Publish NativeAOT (${{ matrix.rid }})
-        run: dotnet publish -r ${{ matrix.rid }} -c Release -p:PublishAot=true -p:PackAsTool=false -p:Version=${{ needs.meta.outputs.version }} -o out
-      - name: Upload native binary
-        uses: actions/upload-artifact@v4
-        with:
-          name: aot-${{ matrix.rid }}
-          path: out/${{ matrix.bin }}
-          if-no-files-found: error
-
-  # ---- npx 레인: npm 패키지 조립 + 게시 (Trusted Publishing / OIDC) ----
+  # ---- npm(npx): Node 순수 JS 패키지 (Trusted Publishing / OIDC, provenance) ----
   npm:
-    needs: [meta, aot]
+    needs: meta
     runs-on: ubuntu-latest
     environment: production
     permissions:
-      id-token: write   # OIDC 신뢰 게시 — 장기 npm 토큰(NPM_TOKEN) 불필요, provenance 자동 첨부.
+      id-token: write   # OIDC 신뢰 게시 — 장기 npm 토큰 불필요, provenance 자동.
       contents: read
     steps:
       - uses: actions/checkout@v4
@@ -123,52 +83,46 @@ jobs:
         with:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
-      # OIDC 신뢰 게시는 npm CLI >= 11.5.1 필요(러너 기본이 더 낮을 수 있어 최신으로 올린다).
+      # OIDC 신뢰 게시는 npm CLI >= 11.5.1 필요.
       - name: Ensure npm supports OIDC trusted publishing
         run: npm install -g npm@latest
-      - name: Download native binaries
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-      - name: Assemble npm packages
-        run: node scripts/assemble-npm.mjs ${{ needs.meta.outputs.version }}
-      # 각 패키지에 npmjs.com 의 trusted publisher(repo + workflow=release.yml + environment=production)가
-      # 설정돼 있어, 토큰 없이 OIDC 로 게시되고 provenance 가 자동 첨부된다.
-      - name: Publish platform packages, then the launcher (OIDC)
-        shell: bash
+      - name: Build pure-JS bundle
+        working-directory: node
         run: |
-          set -e
-          # 플랫폼 패키지를 먼저 게시(런처의 optionalDependency 가 해석 가능해야 하므로), 런처는 마지막.
-          for dir in dist/npm/tablecloth-mcp-*/; do
-            echo "publishing $dir"; npm publish "$dir" --access public
-          done
-          npm publish "dist/npm/tablecloth-mcp/" --access public
+          npm ci
+          npm run build
+      - name: Stamp version
+        working-directory: node
+        run: npm pkg set version="${{ needs.meta.outputs.version }}"
+      - name: Publish (OIDC)
+        working-directory: node
+        run: npm publish --access public
 
-  # ---- Claude Desktop Extension (.mcpb) 번들 ----
-  # 자기완결 바이너리 번들. Windows 는 win-x64 exe(arm64 는 x64 에뮬레이션), macOS 는 osx-arm64.
-  # command 가 확장자 없는 server/tablecloth-mcp 이고 Windows 에서는 앱이 자동으로 .exe 를 붙인다.
+  # ---- .mcpb: Node 번들 기반 Claude Desktop 확장 ----
+  # 순수 JS(server/index.js) + icon + manifest. Claude Desktop 번들 node 로 실행 → 크로스플랫폼,
+  # 네이티브 바이너리 없음(자기잠금/미서명/Gatekeeper 이슈 없음).
   mcpb:
-    needs: [meta, aot]
+    needs: meta
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Download native binaries
-        uses: actions/download-artifact@v4
+      - uses: actions/setup-node@v4
         with:
-          path: artifacts
-          pattern: aot-*
+          node-version: '24'
+      - name: Build node bundle
+        working-directory: node
+        run: |
+          npm ci
+          npm run build
       - name: Assemble bundle dir
         shell: bash
         run: |
           set -e
           VER="${{ needs.meta.outputs.version }}"
           mkdir -p mcpb-build/server
-          # 고유 파일명 사용: command 가 확장자 없는 이름이면 패킹 OS 의 .exe 해석과 충돌해 한쪽이 누락된다.
-          cp artifacts/aot-win-x64/tablecloth-mcp.exe mcpb-build/server/tablecloth-mcp-win.exe
-          cp artifacts/aot-osx-arm64/tablecloth-mcp   mcpb-build/server/tablecloth-mcp-macos
-          chmod +x mcpb-build/server/tablecloth-mcp-macos
-          jq --arg v "$VER" '.version=$v' mcpb/manifest.json > mcpb-build/manifest.json
+          cp node/dist/index.js mcpb-build/server/index.js
           cp mcpb/icon.png mcpb-build/icon.png
+          jq --arg v "$VER" '.version=$v' mcpb/manifest.json > mcpb-build/manifest.json
           cp LICENSE-AGPL LICENSE-COMMERCIAL mcpb-build/ 2>/dev/null || true
       - name: Pack .mcpb
         run: |
@@ -182,13 +136,12 @@ jobs:
           if-no-files-found: error
 
   # ---- 공식 MCP Registry 메타데이터 게시 (GitHub OIDC, 시크릿 불필요) ----
-  # npm 게시가 먼저 끝나야 레지스트리가 패키지+mcpName 검증을 통과한다.
   registry:
     needs: [meta, npm]
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
-      id-token: write   # OIDC 로 registry 인증(io.github.<owner>/ 네임스페이스 소유 증명)
+      id-token: write
       contents: read
     steps:
       - uses: actions/checkout@v4
@@ -203,13 +156,13 @@ jobs:
       - name: Publish to MCP Registry
         run: ./mcp-publisher publish
 
-  # ---- GitHub Release (태그 푸시에만): 네이티브 바이너리 + nupkg + .mcpb 첨부 + 릴리스 노트 ----
+  # ---- GitHub Release (태그 푸시에만): nupkg + .mcpb 첨부 + 릴리스 노트 ----
   github-release:
-    needs: [meta, nuget, aot, npm, mcpb]
+    needs: [meta, nuget, npm, mcpb]
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
-      contents: write   # 릴리스 생성/자산 업로드
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - name: Download all build artifacts
@@ -221,16 +174,6 @@ jobs:
         run: |
           set -e
           mkdir -p release-assets
-          # 네이티브 바이너리를 플랫폼 식별 이름으로 정리(npm/NuGet 없이 직접 받는 용도).
-          for rid in win-x64 win-arm64 osx-arm64 linux-x64 linux-arm64; do
-            src=$(ls artifacts/aot-$rid/* 2>/dev/null | head -1)
-            [ -n "$src" ] || { echo "missing native binary for $rid"; exit 1; }
-            case "$rid" in
-              win-*) cp "$src" "release-assets/tablecloth-mcp-$rid.exe" ;;
-              *)     cp "$src" "release-assets/tablecloth-mcp-$rid" ;;
-            esac
-          done
-          # .NET tool nupkg + Claude Desktop 확장(.mcpb) 도 함께 첨부.
           cp artifacts/nupkg/*.nupkg release-assets/ 2>/dev/null || true
           cp artifacts/mcpb/*.mcpb release-assets/ 2>/dev/null || true
           ls -la release-assets
@@ -244,8 +187,7 @@ jobs:
           VER="${{ needs.meta.outputs.version }}"
           REPO="${{ github.repository }}"
 
-          # CHANGELOG.md 에서 이 버전 섹션만 뽑아 릴리스 노트로 쓴다(없으면 자동 생성으로 폴백).
-          # 정규식 브래킷 이스케이프 이슈를 피하려고 index() 리터럴 매칭을 쓴다.
+          # CHANGELOG.md 에서 이 버전 섹션만 뽑아 릴리스 노트로(없으면 자동 생성 폴백).
           awk -v ver="$VER" '
             index($0, "## [" ver "]")==1 { flag=1; next }
             flag && index($0, "## [")==1 { exit }

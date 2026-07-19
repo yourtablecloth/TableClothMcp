@@ -3,6 +3,21 @@
 이 프로젝트의 버전별 주요 변경 사항을 정리합니다. GitHub Release 노트는 릴리스 시 해당 버전
 섹션의 내용으로 자동 생성됩니다. 새 버전을 낼 때는 아래에 `## [X.Y.Z] - YYYY-MM-DD` 섹션을 추가하세요.
 
+## [0.3.0] - 2026-07-19
+
+### Changed
+- 레인별 런타임 컷오버(SPEC.md 3단계). `.mcpb`(Claude Desktop)와 npm(npx) 을 **Node 순수 JS** 로
+  게시하도록 릴리스 파이프라인을 재구성했습니다. NativeAOT 5-플랫폼 매트릭스와 npm 플랫폼 바이너리
+  패키지를 제거했고, `.mcpb` 는 Claude Desktop 번들 Node 로 실행되는 자기완결 JS 번들이 되었습니다
+  (크로스플랫폼, 네이티브 바이너리 없음 → 미서명/Gatekeeper/확장 재설치 시 exe 잠금 이슈 해소).
+  NuGet 도구(dnx)는 C# 로 유지합니다.
+- CI 에 conformance 게이트를 추가했습니다. 매 빌드에서 .NET 과 Node 구현을 stdio 로 띄워
+  tools/list·대표 출력·공유 문자열·`.wsb` 일치를 검증합니다.
+
+### Removed
+- 구 npm 런처/플랫폼 바이너리 패키징(`scripts/assemble-npm.mjs`, `npm/`). 순수 JS 패키지로 대체.
+  구 플랫폼 패키지(`tablecloth-mcp-<os>-<arch>`)는 `npm deprecate` 로 정리 예정.
+
 ## [0.2.0] - 2026-07-19
 
 ### Changed

@@ -18,8 +18,18 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
-      # AOT/trim/single-file 분석기가 켜져 있어(csproj), 이 빌드가 AOT 비호환을 경고로 잡는다.
-      - name: Build (Release, AOT analyzers on)
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Build .NET (Release)
         run: dotnet build -c Release -warnaserror
-      - name: Lint npm launcher
-        run: node --check npm/tablecloth-mcp/bin/cli.js
+      - name: Build Node (typecheck + bundle)
+        working-directory: node
+        run: |
+          npm ci
+          npm run typecheck
+          npm run build
+      # 드리프트 게이트: 두 구현을 stdio 로 띄워 tools/list·대표 출력·공유 문자열·.wsb 일치를 검증.
+      # (공개 카탈로그 yourtablecloth.app 로 네트워크 필요)
+      - name: Conformance (.NET vs Node)
+        run: node node/test/conformance.mjs

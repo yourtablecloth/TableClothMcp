@@ -13,22 +13,17 @@
     "type": "git",
     "url": "https://github.com/yourtablecloth/TableClothMcp"
   },
-  "homepage": "https://yourtablecloth.app",
+  "homepage": "https://yourtablecloth.app/TableClothMcp/",
   "icon": "icon.png",
   "license": "AGPL-3.0-or-later",
   "privacy_policies": ["https://github.com/yourtablecloth/TableClothMcp/blob/main/PRIVACY.md"],
   "keywords": ["mcp", "tablecloth", "korea", "windows-sandbox", "egov"],
   "server": {
-    "type": "binary",
-    "entry_point": "server/tablecloth-mcp-macos",
+    "type": "node",
+    "entry_point": "server/index.js",
     "mcp_config": {
-      "command": "${__dirname}/server/tablecloth-mcp-macos",
-      "args": [],
-      "platform_overrides": {
-        "win32": {
-          "command": "${__dirname}/server/tablecloth-mcp-win.exe"
-        }
-      }
+      "command": "node",
+      "args": ["${__dirname}/server/index.js"]
     }
   },
   "compatibility": {
