@@ -117,5 +117,9 @@ id 문자셋 방어: `.wsb` 주입 전 `^[A-Za-z0-9._-]+$` 만 허용.
 
 - **버전은 두 구현 lockstep.** 한 태그(`vX.Y.Z`)로 함께 게시.
 - 이 재편(공유 리소스 도입 + 레인/런타임 정리)부터 **0.2.0** 으로 올린다.
-- 현재 상태: 0.2.0 에서 `.NET` 구현이 `shared/` 를 소비하도록 전환(1단계). `Node` 구현과
-  conformance 하네스는 이 문서를 따라 후속(2단계)으로 추가한다.
+- 진행 상태:
+  - 1단계(완료): `.NET` 구현이 `shared/` 를 소비하도록 전환.
+  - 2단계(완료): `node/` 에 Node/TS 구현 추가(`shared/` 소비) + conformance 하네스(`node/test/conformance.mjs`).
+    `.NET` 과 Node 의 tools/list·대표 출력·`.wsb`·공유 문자열 일치를 검증(전 항목 통과).
+  - 3단계(예정): 릴리스 파이프라인 컷오버 — `.mcpb`+npm 을 Node 순수 JS 로 게시, NativeAOT 매트릭스 제거,
+    NuGet 도구는 C# 유지. 구 플랫폼 바이너리 npm 패키지는 `npm deprecate` 로 정리.
