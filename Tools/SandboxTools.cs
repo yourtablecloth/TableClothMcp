@@ -20,7 +20,7 @@ public sealed partial class SandboxTools
     [GeneratedRegex(@"^[A-Za-z0-9._-]+$")]
     private static partial Regex SafeIdRegex();
 
-    [McpServerTool(Name = "generate_wsb")]
+    [McpServerTool(Name = "generate_wsb", Title = "샌드박스 설정(.wsb) 생성", ReadOnly = true, OpenWorld = true)]
     [Description(
         "선택한 service id 들로 실행할 Windows Sandbox 설정(.wsb) XML 텍스트를 생성해 반환한다(파일 실행은 안 함). " +
         "모든 OS 에서 호출 가능 — 사용자에게 .wsb 를 건네 더블클릭하게 할 때 쓴다. " +
@@ -52,7 +52,7 @@ public sealed partial class SandboxTools
         };
     }
 
-    [McpServerTool(Name = "launch_sandbox")]
+    [McpServerTool(Name = "launch_sandbox", Title = "샌드박스로 사이트 열기", ReadOnly = false, Destructive = false, OpenWorld = true)]
     [Description(
         "search_services 로 얻은 service id 들로, 그 한국 은행/공공 사이트를 보안프로그램이 갖춰진 일회용 " +
         "샌드박스에서 즉시 연다. 사용자가 은행 계좌 개설/가입/로그인, 인터넷뱅킹, 홈택스, 정부24 등 보안프로그램이 " +

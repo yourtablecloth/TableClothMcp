@@ -175,6 +175,14 @@ RID별 빌드와 링크는 각 OS 러너에서 수행하며, [`release.yml`](.gi
 매트릭스가 이를 자동화합니다. 도구 반환은 선언형 record와 소스 생성 `JsonSerializerContext`를 쓰고,
 도구 등록은 제네릭 `WithTools<T>`로 하여 AOT에서 리플렉션 없이 동작합니다.
 
+## Privacy Policy
+
+이 서버는 개인 데이터나 대화 내용, 사용 통계를 수집하거나 저장하거나 전송하지 않습니다. 공개
+카탈로그(yourtablecloth.app)와 GitHub Release 자산만 읽어오며, 사용자 데이터를 함께 보내지 않습니다.
+`launch_sandbox`는 로컬에서 샌드박스를 띄우고 임시 `.wsb` 파일만 만들며, 로그인과 인증은 사용자가
+샌드박스 안에서 직접 하고 서버는 관여하지 않습니다. 서버는 무상태이며 종료 후 데이터를 남기지 않습니다.
+전문은 [PRIVACY.md](PRIVACY.md)를 참고하세요.
+
 ## 라이선스
 
 본 프로젝트 TableCloth와 동일하게 듀얼 라이선스입니다.

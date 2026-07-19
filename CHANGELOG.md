@@ -3,6 +3,13 @@
 이 프로젝트의 버전별 주요 변경 사항을 정리합니다. GitHub Release 노트는 릴리스 시 해당 버전
 섹션의 내용으로 자동 생성됩니다. 새 버전을 낼 때는 아래에 `## [X.Y.Z] - YYYY-MM-DD` 섹션을 추가하세요.
 
+## [0.1.6] - 2026-07-19
+
+### Added
+- Claude Connectors Directory(데스크톱 확장) 제출 준비를 마쳤습니다. 모든 도구에 `title`과
+  `readOnly`/`destructive` annotation을 추가하고, 개인정보처리방침을 갖췄습니다(PRIVACY.md,
+  README의 Privacy Policy 섹션, `.mcpb` manifest의 `privacy_policies`).
+
 ## [0.1.5] - 2026-07-19
 
 ### Added

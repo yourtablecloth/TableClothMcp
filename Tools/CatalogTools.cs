@@ -14,7 +14,7 @@ public sealed class CatalogTools
 {
     private static readonly char[] Separators = { ' ', ',', '\t', '\n', '\r' };
 
-    [McpServerTool(Name = "search_services")]
+    [McpServerTool(Name = "search_services", Title = "한국 공공/금융 사이트 검색", ReadOnly = true, OpenWorld = true)]
     [Description(
         "한국의 은행, 금융, 공공(e-Gov), 정부 사이트를 사용자가 실제로 이용하려 할 때 알맞은 공식 사이트(카탈로그 " +
         "서비스)를 찾아 그 service id 를 돌려준다. 이 id 를 launch_sandbox 에 넣으면 보안프로그램(공동인증서, 백신, " +
@@ -71,7 +71,7 @@ public sealed class CatalogTools
         };
     }
 
-    [McpServerTool(Name = "get_service")]
+    [McpServerTool(Name = "get_service", Title = "서비스 상세 조회", ReadOnly = true, OpenWorld = true)]
     [Description("특정 service id 의 상세 정보(필요 보안 패키지 전체, Edge 확장, 호환성 주의사항, 아이콘 URL)를 반환한다.")]
     public static async Task<ServiceResponse> GetService(
         CatalogClient catalog,
@@ -98,7 +98,7 @@ public sealed class CatalogTools
         };
     }
 
-    [McpServerTool(Name = "list_categories")]
+    [McpServerTool(Name = "list_categories", Title = "카테고리 목록", ReadOnly = true, OpenWorld = true)]
     [Description("카탈로그의 서비스 카테고리 목록과 각 개수를 반환한다. 탐색 범위를 좁힐 때 사용.")]
     public static async Task<CategoriesResponse> ListCategories(CatalogClient catalog, CancellationToken ct = default)
     {
@@ -111,7 +111,7 @@ public sealed class CatalogTools
         return new CategoriesResponse { TotalServices = doc.Services.Count, Categories = groups };
     }
 
-    [McpServerTool(Name = "list_companions")]
+    [McpServerTool(Name = "list_companions", Title = "보조 프로그램 목록", ReadOnly = true, OpenWorld = true)]
     [Description("보조 프로그램(공용 소프트웨어: PDF 뷰어, 프린터 유틸 등) 목록을 반환한다(선택적 키워드 필터). " +
                  "이들은 사이트별 필수 보안프로그램과 달리 공식 다운로드 페이지 안내용이다.")]
     public static async Task<CompanionsResponse> ListCompanions(
