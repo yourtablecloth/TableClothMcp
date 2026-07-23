@@ -81,7 +81,7 @@ id 문자셋 방어: `.wsb` 주입 전 `^[A-Za-z0-9._-]+$` 만 허용.
 
 1. `TABLECLOTH_WSB_RUNNER`(모든 OS, 최우선) — `UseShellExecute=false`, `.wsb` 경로를 인자 리스트로.
 2. Windows → `WindowsSandbox.exe` — `UseShellExecute=true`, `.wsb` 경로를 **인용된 Arguments 문자열**로.
-3. macOS → `macSandbox`(`/Applications/MacSandbox.app/Contents/MacOS/MacSandbox` 또는 PATH) — 인자 리스트.
+3. macOS → `macSandbox` — 직접 exec 대신 LaunchServices 위임(`open -a <앱> <.wsb>`, Finder 더블클릭과 동일 경로). 앱은 표준 설치 경로(`/Applications/macSandbox for Windows.app` 등) 또는 번들 ID(`com.rkttu.macsandbox`) 로 `mdfind` 조회해 탐지.
 4. 그 외(Linux 등) → 러너 없음 안내(`runnerUnsupported*`).
 
 `.wsb` 는 시스템 임시 폴더에 `tablecloth-<guid>.wsb` 로 쓴 뒤 러너에 전달. 프로세스는

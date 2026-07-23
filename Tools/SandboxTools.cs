@@ -112,7 +112,10 @@ public sealed partial class SandboxTools
                 };
             }
             runner = "macSandbox";
-            psi = new ProcessStartInfo(mac) { UseShellExecute = false };
+            // 직접 exec 대신 LaunchServices 로 위임(Finder 더블클릭과 동일 경로): open -a <앱> <.wsb>.
+            psi = new ProcessStartInfo("open") { UseShellExecute = false };
+            psi.ArgumentList.Add("-a");
+            psi.ArgumentList.Add(mac);
             passPathAsArgument = false;
         }
         else
@@ -161,22 +164,53 @@ public sealed partial class SandboxTools
         }
     }
 
-    // macSandbox(MacSandbox) 위치를 찾는다: PATH → 표준 .app 경로. 없으면 null.
+    // macSandbox 앱(`macSandbox for Windows.app`, 번들 ID com.rkttu.macsandbox)의 .app 번들 위치를 찾는다.
+    // LaunchServices(open) 위임에는 실행 파일이 아니라 번들 경로가 필요하다. 표준 설치 경로를 먼저 보고,
+    // 없으면 번들 ID 로 mdfind 조회해 이름/위치가 달라도 탐지한다(Finder 더블클릭과 동일 인식). 없으면 null.
     private static string? ResolveMacSandbox()
     {
-        const string appPath = "/Applications/MacSandbox.app/Contents/MacOS/MacSandbox";
-        if (File.Exists(appPath))
-            return appPath;
-
-        var pathEnv = Environment.GetEnvironmentVariable("PATH");
-        if (!string.IsNullOrEmpty(pathEnv))
+        const string bundleId = "com.rkttu.macsandbox";
+        var candidates = new List<string>
         {
-            foreach (var dir in pathEnv.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
+            "/Applications/macSandbox for Windows.app",
+            "/Applications/MacSandbox.app",
+        };
+        var home = Environment.GetEnvironmentVariable("HOME");
+        if (!string.IsNullOrEmpty(home))
+        {
+            candidates.Add(Path.Combine(home, "Applications", "macSandbox for Windows.app"));
+            candidates.Add(Path.Combine(home, "Applications", "MacSandbox.app"));
+        }
+        foreach (var app in candidates)
+        {
+            if (Directory.Exists(app))
+                return app;
+        }
+
+        try
+        {
+            var psi = new ProcessStartInfo("mdfind")
             {
-                var full = Path.Combine(dir, "MacSandbox");
-                if (File.Exists(full))
-                    return full;
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+            };
+            psi.ArgumentList.Add($"kMDItemCFBundleIdentifier == '{bundleId}'");
+            using var proc = Process.Start(psi);
+            if (proc is not null)
+            {
+                var output = proc.StandardOutput.ReadToEnd();
+                proc.WaitForExit();
+                foreach (var line in output.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+                {
+                    var app = line.Trim();
+                    if (Directory.Exists(app))
+                        return app;
+                }
             }
+        }
+        catch
+        {
+            // mdfind 부재/실패 시 무시 — 표준 경로 탐지 결과로 판단.
         }
         return null;
     }
