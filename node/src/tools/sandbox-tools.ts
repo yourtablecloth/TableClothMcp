@@ -88,16 +88,14 @@ export async function launchSandbox(serviceIds: string[]) {
 
   let runner: string;
   let command: string;
-  let args: string[];
+  let args: string[] = [];
   const customRunner = process.env.TABLECLOTH_WSB_RUNNER;
   if (customRunner && customRunner.trim().length > 0) {
     runner = `custom (${customRunner})`;
     command = customRunner;
-    args = [];
   } else if (process.platform === "win32") {
     runner = "Windows Sandbox";
     command = "WindowsSandbox.exe";
-    args = [];
   } else if (process.platform === "darwin") {
     const mac = resolveMacSandbox();
     if (!mac) {
