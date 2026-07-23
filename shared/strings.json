@@ -40,7 +40,7 @@
       "params": {
         "serviceIds": "샌드박스에서 열 카탈로그 service id 목록(1개 이상). search_services 로 확인."
       },
-      "usage": "이 XML 을 .wsb 파일로 저장해 실행하면 지정한 사이트들이 보안프로그램과 함께 준비됩니다. 러너: Windows → Windows Sandbox(Windows 11 기능, 더블클릭), macOS(Apple Silicon) → macSandbox(`MacSandbox <file>.wsb`).",
+      "usage": "이 XML 을 .wsb 파일로 저장해 실행하면 지정한 사이트들이 보안프로그램과 함께 준비됩니다. 러너: Windows → Windows Sandbox(Windows 11 기능, 더블클릭), macOS(Apple Silicon) → macSandbox(.wsb 더블클릭).",
       "errorNoValidIds": "유효한 service id 가 없습니다.",
       "hintNoValidIds": "search_services 로 정확한 id(대소문자 구분)를 확인하세요."
     },
