@@ -71,6 +71,7 @@ id 문자셋 방어: `.wsb` 주입 전 `^[A-Za-z0-9._-]+$` 만 허용.
 - 템플릿: `shared/wsb-template.xml` 로드 후 `__SITEIDS__` 를 사이트 사전선택 구문으로 치환.
 - 사이트 주입 채널: 환경변수 `TABLECLOTH_SITE_IDS`(PARAMETERIZED_WSB_SPEC.md §0.5). 치환 구문 예:
   ` $env:TABLECLOTH_SITE_IDS = ''<id1> <id2>'';` (id 없으면 빈 문자열).
+- 다중 id honor: 여러 service id가 오면 **모두** 공백으로 join 해 `TABLECLOTH_SITE_IDS`에 **한 번만** 대입한다(처음 하나로 자르지 않는다). 이 계약은 `node/test/conformance.mjs`의 다중 id 회귀 검사로 고정한다. 실행 배관(러너/준비 스크립트/Spork)은 이 값을 받아 지정한 모든 사이트를 각각 **한 번씩** 연다(다운스트림 계약은 [TableCloth](https://github.com/yourtablecloth/TableCloth); 관련 이슈 [#2](https://github.com/yourtablecloth/TableClothMcp/issues/2)).
 - 실행 자산은 전부 GitHub 릴리스 공개 URL(`tablecloth-prepare.ps1` 등). 무설치 Express 레인.
 - `securityNote`: 응답에 항상 포함. 문구는 `strings.json` 의 `sandbox.securityNote`.
 - 알려진 이슈/하드닝: 명령이 원격 스크립트 실행 형태라 오탐될 수 있음 → [#1](https://github.com/yourtablecloth/TableClothMcp/issues/1).

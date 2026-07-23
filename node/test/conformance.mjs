@@ -49,6 +49,8 @@ async function collect(cmd, args) {
     [4, "tools/call", { name: "list_categories", arguments: {} }],
     [5, "tools/call", { name: "get_service", arguments: { id: "Hometax" } }],
     [6, "tools/call", { name: "list_companions", arguments: {} }],
+    // 여러 사이트를 한 번에 지정했을 때 모든 id가 .wsb에 유지되는지(다중 인자 honor, 이슈 #2) 검증한다.
+    [7, "tools/call", { name: "generate_wsb", arguments: { serviceIds: ["Hometax", "ShinhanBank"] } }],
   ];
   for (const [id, method, params] of reqs) c.send({ jsonrpc: "2.0", id, method, params });
   const body = async (id) => JSON.parse((await c.wait(id)).result.content[0].text);
@@ -60,6 +62,7 @@ async function collect(cmd, args) {
     cats: await body(4),
     getSvc: await body(5),
     companions: await body(6),
+    genWsbMulti: await body(7),
   };
   c.close();
   return out;
@@ -115,6 +118,18 @@ check(".wsb byte-equal", net.genWsb.wsb === node.genWsb.wsb);
 check("securityNote==shared (both)", net.genWsb.securityNote === shared.sandbox.securityNote && node.genWsb.securityNote === shared.sandbox.securityNote);
 check("usage==shared (both)", net.genWsb.usage === shared.tools.generate_wsb.usage && node.genWsb.usage === shared.tools.generate_wsb.usage);
 check("siteIds equal", canon(net.genWsb.siteIds) === canon(node.genWsb.siteIds));
+
+// 다중 사이트 id honor (이슈 #2): 여러 개를 넘겨도 처음 하나로 잘리지 않고 모두 .wsb에 실려야 하며,
+// TABLECLOTH_SITE_IDS 환경변수 채널에 공백으로 join 되어 한 번만 대입돼야 한다(SPEC.md §7).
+const multiIds = ["Hometax", "ShinhanBank"];
+const assignmentCount = (wsb) => (wsb.match(/TABLECLOTH_SITE_IDS\s*=/g) ?? []).length;
+for (const [impl, r] of [["net", net.genWsbMulti], ["node", node.genWsbMulti]]) {
+  check(`multi-id siteIds honored (${impl})`, canon(r.siteIds) === canon(multiIds), `siteIds=${JSON.stringify(r.siteIds)}`);
+  check(`multi-id all ids present in .wsb (${impl})`, multiIds.every((id) => r.wsb.includes(id)));
+  check(`multi-id single env assignment (${impl})`, assignmentCount(r.wsb) === 1, `count=${assignmentCount(r.wsb)}`);
+  check(`multi-id ids space-joined in env channel (${impl})`, r.wsb.includes(multiIds.join(" ")));
+}
+check("multi-id .wsb byte-equal (.NET vs Node)", net.genWsbMulti.wsb === node.genWsbMulti.wsb);
 
 console.log("\n[5] list_categories parity");
 check("totalServices equal", net.cats.totalServices === node.cats.totalServices, `net=${net.cats.totalServices} node=${node.cats.totalServices}`);
